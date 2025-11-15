@@ -4,7 +4,11 @@ from api.main import app
 
 
 def test_health_endpoint() -> None:
-    client = TestClient(app)
-    response = client.get("/api/health")
+    with TestClient(app) as client:
+        response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["db_status"] == "ok"
+    assert payload["version"] == app.version
+    assert payload["uptime_seconds"] >= 0

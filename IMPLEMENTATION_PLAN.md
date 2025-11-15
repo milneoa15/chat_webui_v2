@@ -24,6 +24,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Dry-run GitHub Actions locally via `act` (optional) or confirm workflow YAML passes `yamllint`.
 
 ## Phase 2 – Backend Core Infrastructure (Config & Persistence)
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Establish FastAPI project structure with configuration storage, SQLite persistence via SQLModel, and foundational routes.
 - **Key Tasks:**
   - Layout backend package `api/` with modules: `main.py`, `dependencies.py`, `config.py`, `database.py`, `models.py`, `routers/`.
