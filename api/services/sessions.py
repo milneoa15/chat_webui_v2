@@ -9,7 +9,7 @@ from sqlalchemy import asc, desc, func
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ..models import Message, MessageRole, PromptMeta, Session
+from ..models import Message, MessageRole, PromptMeta, Session, SessionModelLink
 from ..schemas import MessageCreate, MessageRead, SessionCreate, SessionRead, SessionUpdate
 
 
@@ -28,6 +28,22 @@ class SessionService:
         if session_obj is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
         return session_obj
+
+    async def _record_session_model(self, session_id: int, model_name: str) -> None:
+        norm = model_name.strip()
+        if not norm:
+            return
+        query = select(SessionModelLink).where(
+            SessionModelLink.session_id == session_id,
+            SessionModelLink.model_name == norm,
+        )
+        result = await self.session.exec(query)
+        row = result.first()
+        if row:
+            row.last_used_at = self._utcnow()
+            self.session.add(row)
+        else:
+            self.session.add(SessionModelLink(session_id=session_id, model_name=norm))
 
     async def list_sessions(self) -> list[Session]:
         statement = select(Session).order_by(desc("updated_at"))
@@ -76,6 +92,9 @@ class SessionService:
         session_obj.updated_at = self._utcnow()
         self.session.add(message)
         self.session.add(session_obj)
+        session_id_value = session_obj.id
+        if payload.model and session_id_value is not None:
+            await self._record_session_model(session_id_value, payload.model)
         await self.session.commit()
         await self.session.refresh(message)
         await self.session.refresh(session_obj)

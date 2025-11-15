@@ -11,12 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
 from .config import AppSettings, get_settings
-from .database import dispose_engine, init_db
+from .database import dispose_engine, get_session_factory, init_db
 from .routers import config as config_router
 from .routers import health as health_router
+from .routers import models as models_router
 from .routers import sessions as sessions_router
 from .routers import title as title_router
 from .routers import version as version_router
+from .services.models import model_scheduler
 
 
 def configure_logging(settings: AppSettings) -> None:
@@ -46,10 +48,14 @@ logger = structlog.get_logger(__name__)
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Run startup/shutdown hooks via FastAPI lifespan API."""
     await init_db()
+    session_factory = get_session_factory(settings)
+    model_scheduler.configure(settings=settings, session_factory=session_factory)
+    await model_scheduler.start()
     logger.info("app.startup_complete")
     try:
         yield
     finally:
+        await model_scheduler.shutdown()
         await dispose_engine()
         logger.info("app.shutdown_complete")
 
@@ -97,6 +103,7 @@ async def envelope_errors(
 
 app.include_router(health_router.router)
 app.include_router(config_router.router)
+app.include_router(models_router.router)
 app.include_router(sessions_router.router)
 app.include_router(title_router.router)
 app.include_router(version_router.router)

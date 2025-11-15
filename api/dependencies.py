@@ -12,6 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .config import AppSettings, get_settings
 from .database import get_session, get_session_factory
 from .services.config import ConfigService
+from .services.models import ModelService, get_model_cache
 from .services.prompt_builder import PromptBuilder
 from .services.sessions import SessionService
 from .services.title import TitleService
@@ -60,6 +61,20 @@ def get_session_service(
 def get_prompt_builder() -> PromptBuilder:
     """Return a prompt builder instance."""
     return PromptBuilder()
+
+
+def get_model_service(
+    session: AsyncSession = Depends(get_db_session),
+    settings: AppSettings = Depends(get_settings),
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+) -> ModelService:
+    """Provide a ModelService wired with the cached store."""
+    return ModelService(
+        session=session,
+        settings=settings,
+        http_client=http_client,
+        cache=get_model_cache(),
+    )
 
 
 def get_title_service(

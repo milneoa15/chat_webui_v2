@@ -46,6 +46,7 @@ class Session(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 
+
 class Message(SQLModel, table=True):
     """Chat message persisted per session."""
 
@@ -65,6 +66,7 @@ class Message(SQLModel, table=True):
     )
     created_at: datetime = Field(default_factory=utcnow)
 
+
 class PromptMeta(SQLModel, table=True):
     """Metadata emitted by the prompt builder for analytics."""
 
@@ -81,3 +83,31 @@ class PromptMeta(SQLModel, table=True):
         sa_column=Column(JSON, default=dict),
     )
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class SessionModelLink(SQLModel, table=True):
+    """Track which sessions reference which models for warning surfaces."""
+
+    __tablename__ = "session_models"
+
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: int = Field(foreign_key="sessions.id", index=True)
+    model_name: str = Field(max_length=120, index=True)
+    last_used_at: datetime = Field(default_factory=utcnow)
+
+
+class ModelStatsSnapshot(SQLModel, table=True):
+    """Persisted snapshot of CPU/GPU metrics gathered from Ollama."""
+
+    __tablename__ = "model_stats"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cpu_percent: float | None = Field(default=None, ge=0)
+    gpu_percent: float | None = Field(default=None, ge=0)
+    memory_percent: float | None = Field(default=None, ge=0)
+    raw: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(JSON, default=dict),
+    )
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)

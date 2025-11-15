@@ -103,6 +103,57 @@ class MessageListResponse(BaseModel):
     offset: int
 
 
+class ModelStats(BaseModel):
+    """CPU/GPU snapshot values captured during scheduler runs."""
+
+    cpu_percent: float | None = Field(default=None, ge=0)
+    gpu_percent: float | None = Field(default=None, ge=0)
+    memory_percent: float | None = Field(default=None, ge=0)
+    updated_at: datetime | None = None
+
+
+class ModelSummary(BaseModel):
+    """Aggregated metadata for a single Ollama model."""
+
+    name: str
+    digest: str | None = None
+    size_mib: float | None = Field(default=None, ge=0)
+    pulled: bool = False
+    loaded: bool = False
+    last_modified: datetime | None = None
+    status: str | None = None
+    sessions: list[int] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ModelListResponse(BaseModel):
+    """Envelope describing cached models and scheduler stats."""
+
+    items: list[ModelSummary]
+    last_refreshed: datetime | None
+    stats: ModelStats | None = None
+
+
+class ModelNameRequest(BaseModel):
+    """Common payload for model actions."""
+
+    name: str = Field(min_length=1)
+
+
+class ModelPullRequest(ModelNameRequest):
+    """Pull request payload controlling stream behavior."""
+
+    stream: bool = Field(default=True)
+
+
+class ModelActionResponse(BaseModel):
+    """Standard response when performing model actions."""
+
+    name: str
+    message: str
+    timestamp: datetime
+
+
 class TitleRequest(BaseModel):
     """Request body for title generation."""
 
@@ -123,6 +174,11 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok", "degraded", "error"]
     db_status: Literal["ok", "error"]
+    ollama_status: Literal["ok", "error", "unknown"]
+    scheduler_status: Literal["running", "stopped", "error"]
+    model_cache_age_seconds: float | None = Field(default=None, ge=0)
+    cached_model_count: int = Field(default=0, ge=0)
+    model_stats: ModelStats | None = None
     uptime_seconds: float = Field(ge=0)
     timestamp: datetime
     version: str
