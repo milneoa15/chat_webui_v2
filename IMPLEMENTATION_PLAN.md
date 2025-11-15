@@ -3,6 +3,7 @@
 _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3.12 and npm-managed Node 18+ (Vite/React). All commands assume bash shell._
 
 ## Phase 1 – Environment Bootstrapping & Toolchain Guardrails
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Provide a reproducible dev environment with linting, typing, testing, and GitHub Actions scaffolding before feature work begins.
 - **Key Tasks:**
   - Since npm/nvm and uv are already installed on Ubuntu 24.04, simply verify versions (`uv --version`, `npm -v`, `node -v`, `pnpm -v`, `npx vite --version`) and pin `python3.12` as default interpreter.
