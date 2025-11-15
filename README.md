@@ -30,15 +30,5 @@ npm run test
 ## Combined Dev Workflow
 Use `uv run uvicorn` for the backend and `npm run dev` for the frontend concurrently (e.g., via two terminals or a process manager). Default API base is `http://localhost:8000` with Vite running on `5173`.
 
-## Version Control
-This project lives at [`milneoa15/chat_webui_v2`](https://github.com/milneoa15/chat_webui_v2). After cloning or creating a fresh workspace:
-
-```bash
-git init
-git remote add origin git@github.com:milneoa15/chat_webui_v2.git
-git add .
-git commit -m "chore: scaffold project stack"
-```
-
 ## Continuous Integration
 GitHub Actions workflow (`.github/workflows/ci.yml`) validates backend (pytest, ruff, mypy) and frontend (lint, unit tests, Playwright smoke tests) on Ubuntu latest runners.

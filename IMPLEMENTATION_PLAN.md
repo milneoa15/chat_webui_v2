@@ -6,11 +6,12 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
 - **Goal:** Provide a reproducible dev environment with linting, typing, testing, and GitHub Actions scaffolding before feature work begins.
 - **Key Tasks:**
   - Since npm/nvm and uv are already installed on Ubuntu 24.04, simply verify versions (`uv --version`, `npm -v`, `node -v`, `pnpm -v`, `npx vite --version`) and pin `python3.12` as default interpreter.
-  - Initialize a Git repository, set the `origin` remote to `git@github.com:milneoa15/chat_webui_v2.git`, and create the baseline commit (`chore: scaffold project stack`) before branching for later phases.
+  - Initialize a Git repository, set the `origin` remote to `git@github.com:milneoa15/chat_webui_v2.git`, and create the baseline commit (`chore: scaffold project stack`) as the starting point for main.
   - Initialize Python project with `pyproject.toml` declaring FastAPI, uvicorn[standard], sqlmodel, sqlalchemy, httpx, apscheduler, structlog, fastapi-sse, pydantic-settings, python-dotenv, pytest, pytest-asyncio, mypy, ruff.
   - Initialize frontend with `npm create vite@latest frontend -- --template react-ts`, add Tailwind CSS, Radix UI, React Router, Zustand, React Query or RTK Query, `lucide-react`, `clsx`, `vite-tsconfig-paths`, `eslint`, `prettier`, `vitest`, `@testing-library/react`, `@tanstack/react-query`, `playwright`.
   - Create shared `.editorconfig`, `.env.example`, `.envrc` (direnv optional), `.gitignore`, and VSCode settings recommending `ruff`, `mypy`, `eslint`.
   - Scaffold GitHub Actions workflow running `uv run pytest`, `uv run ruff check`, `uv run mypy`, `npm run lint`, `npm run test`, `npx playwright test`.
+  - Once lint/tests pass, push the baseline to GitHub (`git push -u origin main`) so every later phase can build atop main.
 - **Requirements / Definition of Done:**
   - `uv run pip list` shows declared backend dependencies; `npm install` succeeds inside `frontend/`.
   - Tailwind configured via `tailwind.config.cjs`, `postcss.config.cjs`, `src/index.css` includes `@tailwind base/components/utilities`.
@@ -30,6 +31,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Add Pydantic schemas for read/write models; load settings from `.env` using `pydantic-settings`.
   - Implement `/api/health` for readiness and `/api/config` CRUD operations; include `GET /api/version` proxy to Ollama for validation using `httpx.AsyncClient`.
   - Integrate structlog logging, exception middleware returning JSON error envelopes, and CORS configuration for Vite dev origin.
+  - Commit Phase 2 work directly on main with message `feat: backend config foundation` after tests pass, then push.
 - **Requirements / Definition of Done:**
   - FastAPI app served via `uvicorn api.main:app --reload` responds to `/api/health` with uptime + DB status.
   - `Config` table migrations run automatically on startup; ability to set/update Ollama URL persisted.
@@ -47,6 +49,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Expose `/api/title` endpoint calling selected model via Ollama `/api/generate` with specialized prompt template; store result without modifying original message log.
   - Build prompt builder pipeline class that accepts base messages plus optional plugin outputs (RAG/tool stubs) before streaming.
   - Ensure transactions maintain invariants (e.g., `Session.updated_at` auto-updates on message insert).
+  - Commit Phase 3 work on main with message `feat: session persistence & titles` and push after CI succeeds.
 - **Requirements / Definition of Done:**
   - Creating a session writes DB rows accessible through API; deleting cascades messages.
   - First user message triggers background task to call `/api/title` and persist title.
@@ -64,6 +67,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Add APScheduler job (AsyncIOScheduler) refreshing `/api/tags` + `/api/ps` caches; persist CPU/GPU stats.
   - Store model metadata in DB referencing sessions for warnings when model not loaded.
   - Extend `/api/health` to surface Ollama reachability, scheduler status, and cached stats.
+  - Commit Phase 4 deliverables on main as `feat: model catalog services` once automated checks stay green, then push.
 - **Requirements / Definition of Done:**
   - API returns aggregated model list with download status and load state.
   - Pull/delete/load/unload endpoints handle optimistic updates and propagate errors with structured responses.
@@ -81,6 +85,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Support message actions: regenerate (duplicate last user prompt), delete, pin; expose REST endpoints for these actions.
   - Implement `PromptOptions` model capturing temperature, top_p, top_k, repeat_penalty, context_window, stop sequences from global config with session overrides.
   - Provide WebSocket fallback route (e.g., `/ws/chat`) for future use but keep SSE primary.
+  - Commit the streaming feature on main with message `feat: chat streaming pipeline`, then push after verification.
 - **Requirements / Definition of Done:**
   - SSE endpoint returns incremental tokens; client disconnect cleans up background tasks.
   - Messages stored with streaming transcript; regenerate action overwrites previous assistant message.
@@ -98,6 +103,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Integrate Tailwind + Radix UI primitives; define design tokens via CSS variables for Dark Graphite, Terminal Green, Solarized Dark, Light Quartz themes, persisted in localStorage and synced to backend profile.
   - Add keyboard shortcut manager (Cmd/Ctrl+K) using `cmdk` or custom command palette listing session/model actions.
   - Implement offline banner component triggered when backend health fails.
+  - Commit Phase 6 changes on main (`feat: frontend routing & theming scaffold`) once CI and Vitest suites pass, then push.
 - **Requirements / Definition of Done:**
   - `src/api/client.ts` generated from backend OpenAPI schema; hooks typed end-to-end.
   - Theme switching updates document class, persists preference, and notifies backend via `/api/config/theme`.
@@ -117,6 +123,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Integrate SSE hook to consume `/api/chat`, stream tokens, compute tokens/sec, update metrics HUD.
   - Implement Models view showing aggregated data, progress bars for pulls, load/unload buttons streaming logs, and warnings when session model not loaded.
   - Settings panel with tabs: General, Generation Defaults, Appearance, Advanced; integrate form validation with `react-hook-form` + zod.
+  - Commit this UX milestone directly on main with `feat: chat & model workflows`, then push.
 - **Requirements / Definition of Done:**
   - First-run wizard blocks until Ollama URL saved and validated.
   - Chat UI persists messages, displays token metrics, supports parameter adjustments synced to backend.
@@ -136,6 +143,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Build Dockerfile: stage 1 installs backend deps with uv, stage 2 builds frontend with npm, final stage runs uvicorn behind gunicorn (optional) and serves frontend via `uvicorn` + `StaticFiles` or Nginx in docker-compose.
   - Configure `docker-compose.yml` for backend, nginx, and sqlite volume.
   - Ensure GitHub Actions publishes Docker image on tagged releases and updates CHANGELOG.
+  - If the release packaging feels optional for some consumers, develop it on a dedicated branch (e.g., `phase-8-release-packaging`), commit `chore: release packaging & docs`, and only merge/tag on `main` once stakeholders confirm they want the Docker artifacts included.
 - **Requirements / Definition of Done:**
   - `make dev` launches both servers with shared `.env` values; hot reload works.
   - `docker compose up` serves production build accessible on localhost with HTTPS termination handled via self-signed cert or reverse proxy instructions.
