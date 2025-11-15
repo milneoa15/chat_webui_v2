@@ -1,7 +1,0 @@
-{
-  "recommendations": [
-    "charliermarsh.ruff",
-    "ms-python.mypy-type-checker",
-    "dbaeumer.vscode-eslint"
-  ]
-}
