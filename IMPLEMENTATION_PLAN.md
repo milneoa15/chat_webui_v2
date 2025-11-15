@@ -10,7 +10,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Initialize a Git repository, set the `origin` remote to `git@github.com:milneoa15/chat_webui_v2.git`, and create the baseline commit (`chore: scaffold project stack`) as the starting point for main.
   - Initialize Python project with `pyproject.toml` declaring FastAPI, uvicorn[standard], sqlmodel, sqlalchemy, httpx, apscheduler, structlog, fastapi-sse, pydantic-settings, python-dotenv, pytest, pytest-asyncio, mypy, ruff.
   - Initialize frontend with `npm create vite@latest frontend -- --template react-ts`, add Tailwind CSS, Radix UI, React Router, Zustand, React Query or RTK Query, `lucide-react`, `clsx`, `vite-tsconfig-paths`, `eslint`, `prettier`, `vitest`, `@testing-library/react`, `@tanstack/react-query`, `playwright`.
-  - Create shared `.editorconfig`, `.env.example`, `.envrc` (direnv optional), `.gitignore`, and VSCode settings recommending `ruff`, `mypy`, `eslint`.
+  - Create shared `.editorconfig`, `.env.example`, `.gitignore`, and VSCode settings recommending `ruff`, `mypy`, `eslint`.
   - Scaffold GitHub Actions workflow running `uv run pytest`, `uv run ruff check`, `uv run mypy`, `npm run lint`, `npm run test`, `npx playwright test`.
   - Once lint/tests pass, push the baseline to GitHub (`git push -u origin main`) so every later phase can build atop main.
 - **Requirements / Definition of Done:**

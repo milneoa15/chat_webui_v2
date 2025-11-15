@@ -18,7 +18,6 @@ frontend/dist/
 # Env
 .env
 .env.*.local
-.envrc
 chatbot.db
 
 # IDE

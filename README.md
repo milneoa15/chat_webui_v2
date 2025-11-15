@@ -8,6 +8,15 @@ This repository hosts the v2 implementation of a terminal-inspired chat experien
 - [`nvm`](https://github.com/nvm-sh/nvm) with Node.js 18+ (`node -v`) and npm (`npm -v`)
 - Optional: `pnpm`, `act`, Docker
 
+## Environment Variables
+Copy the template file and update any values before running either stack:
+```bash
+cp .env.example .env
+# edit .env as needed, then export it for your current shell
+set -a && source .env && set +a
+```
+Every terminal session that interacts with `uv run ...` or `npm run ...` needs those exports (you can add the commands to your shell profile if desired). Secrets should only live in `.env`; the `*.example` file remains a safe template to commit.
+
 ## Backend Setup
 ```bash
 uv sync --extra test --extra lint
