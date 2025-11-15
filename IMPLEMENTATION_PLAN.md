@@ -63,6 +63,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Manual POST via HTTPie: `http POST :8000/api/sessions title="Demo"` responds with stored object.
 
 ## Phase 4 – Model Management Services & Scheduler
+- **Status:** ✅ Completed – 2025-11-15
 - **Goal:** Deliver comprehensive model catalog, pull/delete/load/unload controls, and health dashboard data via FastAPI.
 - **Key Tasks:**
   - Implement `/api/models` router proxying Ollama endpoints: `/api/tags`, `/api/ps`, `/api/pull`, `/api/delete`, `/api/show`, plus custom `/load` & `/unload` invoking shell commands (`ollama run/stop`).
