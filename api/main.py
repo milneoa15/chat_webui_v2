@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, Response
 
 from .config import AppSettings, get_settings
 from .database import dispose_engine, get_session_factory, init_db
+from .routers import chat as chat_router
 from .routers import config as config_router
 from .routers import health as health_router
 from .routers import models as models_router
@@ -103,6 +104,7 @@ async def envelope_errors(
 
 app.include_router(health_router.router)
 app.include_router(config_router.router)
+app.include_router(chat_router.router)
 app.include_router(models_router.router)
 app.include_router(sessions_router.router)
 app.include_router(title_router.router)

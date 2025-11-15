@@ -7,9 +7,12 @@ from ..dependencies import get_session_service, get_title_service
 from ..schemas import (
     MessageCreate,
     MessageListResponse,
+    MessagePinRequest,
     MessageRead,
+    MessageRegenerateResponse,
     SessionCreate,
     SessionListResponse,
+    SessionMetricsResponse,
     SessionRead,
     SessionUpdate,
 )
@@ -80,3 +83,51 @@ async def create_message(
             model=payload.model,
         )
     return service.to_message_read(message)
+
+
+@router.delete("/{session_id}/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_message(
+    session_id: int,
+    message_id: int,
+    service: SessionService = Depends(get_session_service),
+) -> Response:
+    await service.delete_message(session_id, message_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{session_id}/messages/{message_id}/pin", response_model=MessageRead)
+async def toggle_pin(
+    session_id: int,
+    message_id: int,
+    payload: MessagePinRequest,
+    service: SessionService = Depends(get_session_service),
+) -> MessageRead:
+    message = await service.set_message_pin(session_id, message_id, payload.pinned)
+    return service.to_message_read(message)
+
+
+@router.post(
+    "/{session_id}/messages/{message_id}/regenerate",
+    response_model=MessageRegenerateResponse,
+)
+async def request_regeneration(
+    session_id: int,
+    message_id: int,
+    service: SessionService = Depends(get_session_service),
+) -> MessageRegenerateResponse:
+    assistant, user_message = await service.prepare_regeneration(
+        session_id, message_id, delete=False
+    )
+    return MessageRegenerateResponse(
+        session_id=session_id,
+        assistant_message_id=assistant.id or 0,
+        prompt=user_message.content,
+        model=assistant.model,
+    )
+
+
+@router.get("/{session_id}/metrics", response_model=SessionMetricsResponse)
+async def session_metrics(
+    session_id: int, service: SessionService = Depends(get_session_service)
+) -> SessionMetricsResponse:
+    return await service.collect_metrics(session_id)

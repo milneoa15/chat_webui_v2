@@ -10,7 +10,15 @@ from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from ..models import Message, MessageRole, PromptMeta, Session, SessionModelLink
-from ..schemas import MessageCreate, MessageRead, SessionCreate, SessionRead, SessionUpdate
+from ..schemas import (
+    MessageCreate,
+    MessageMetrics,
+    MessageRead,
+    SessionCreate,
+    SessionMetricsResponse,
+    SessionRead,
+    SessionUpdate,
+)
 
 
 class SessionService:
@@ -88,6 +96,7 @@ class SessionService:
             completion_tokens=payload.completion_tokens,
             total_tokens=payload.total_tokens,
             metrics=payload.metrics,
+            is_pinned=payload.is_pinned,
         )
         session_obj.updated_at = self._utcnow()
         self.session.add(message)
@@ -122,6 +131,110 @@ class SessionService:
             total_value = total_row
         total = int(total_value or 0)
         return items, total
+
+    async def recent_messages(self, session_id: int, limit: int = 200) -> list[Message]:
+        await self._get_session(session_id)
+        query = (
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(desc("created_at"))
+            .limit(limit)
+        )
+        result = await self.session.exec(query)
+        items = list(result)
+        items.reverse()
+        return items
+
+    async def get_message(self, message_id: int, *, session_id: int | None = None) -> Message:
+        message = await self.session.get(Message, message_id)
+        if message is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+        if session_id is not None and message.session_id != session_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+        return message
+
+    async def delete_message(self, session_id: int, message_id: int) -> None:
+        await self._get_session(session_id)
+        message = await self.get_message(message_id, session_id=session_id)
+        await self.session.delete(message)
+        await self.session.commit()
+
+    async def set_message_pin(self, session_id: int, message_id: int, pinned: bool) -> Message:
+        await self._get_session(session_id)
+        message = await self.get_message(message_id, session_id=session_id)
+        message.is_pinned = pinned
+        self.session.add(message)
+        await self.session.commit()
+        await self.session.refresh(message)
+        return message
+
+    async def prepare_regeneration(
+        self, session_id: int, assistant_message_id: int, *, delete: bool = True
+    ) -> tuple[Message, Message]:
+        """Optionally delete the assistant message and return both assistant + user rows."""
+
+        assistant = await self.get_message(assistant_message_id, session_id=session_id)
+        if MessageRole(assistant.role) is not MessageRole.ASSISTANT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only assistant messages can be regenerated",
+            )
+        query = (
+            select(Message)
+            .where(Message.session_id == session_id)
+            .where(Message.role == MessageRole.USER)
+            .where(Message.created_at <= assistant.created_at)
+            .order_by(desc("created_at"))
+            .limit(1)
+        )
+        result = await self.session.exec(query)
+        user_message = result.first()
+        if user_message is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to locate user prompt for regeneration",
+            )
+        if delete:
+            await self.session.delete(assistant)
+            await self.session.commit()
+        return assistant, user_message
+
+    async def collect_metrics(self, session_id: int) -> SessionMetricsResponse:
+        await self._get_session(session_id)
+        query = (
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(asc("created_at"))
+        )
+        result = await self.session.exec(query)
+        messages = list(result)
+        total_prompt = 0
+        total_completion = 0
+        metric_items: list[MessageMetrics] = []
+        for message in messages:
+            prompt_tokens = int(message.prompt_tokens or 0)
+            completion_tokens = int(message.completion_tokens or 0)
+            if message.role == MessageRole.USER:
+                total_prompt += prompt_tokens
+            else:
+                total_completion += completion_tokens
+            metric_items.append(
+                MessageMetrics(
+                    message_id=message.id or 0,
+                    role=message.role.value if isinstance(message.role, MessageRole) else message.role,
+                    prompt_tokens=message.prompt_tokens,
+                    completion_tokens=message.completion_tokens,
+                    total_tokens=message.total_tokens,
+                    metrics=message.metrics or {},
+                )
+            )
+        return SessionMetricsResponse(
+            session_id=session_id,
+            total_prompt_tokens=total_prompt,
+            total_completion_tokens=total_completion,
+            total_messages=len(messages),
+            messages=metric_items,
+        )
 
     async def record_prompt_meta(
         self,
@@ -168,6 +281,7 @@ class SessionService:
             completion_tokens=message.completion_tokens,
             total_tokens=message.total_tokens,
             metrics=message.metrics or {},
+            is_pinned=message.is_pinned,
             created_at=message.created_at,
         )
 

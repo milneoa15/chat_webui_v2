@@ -11,6 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .config import AppSettings, get_settings
 from .database import get_session, get_session_factory
+from .services.chat import ChatService
 from .services.config import ConfigService
 from .services.models import ModelService, get_model_cache
 from .services.prompt_builder import PromptBuilder
@@ -61,6 +62,25 @@ def get_session_service(
 def get_prompt_builder() -> PromptBuilder:
     """Return a prompt builder instance."""
     return PromptBuilder()
+
+
+def get_chat_service(
+    session: AsyncSession = Depends(get_db_session),
+    settings: AppSettings = Depends(get_settings),
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+    prompt_builder: PromptBuilder = Depends(get_prompt_builder),
+    fernet: Fernet = Depends(get_fernet),
+) -> ChatService:
+    """Construct the chat streaming service with shared dependencies."""
+    config_service = ConfigService(session=session, settings=settings, fernet=fernet)
+    session_service = SessionService(session=session)
+    return ChatService(
+        settings=settings,
+        http_client=http_client,
+        prompt_builder=prompt_builder,
+        config_service=config_service,
+        session_service=session_service,
+    )
 
 
 def get_model_service(

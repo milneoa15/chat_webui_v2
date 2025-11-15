@@ -94,9 +94,26 @@ curl -X POST http://127.0.0.1:8000/api/models/load \
 curl -X POST http://127.0.0.1:8000/api/models/unload \
   -H 'Content-Type: application/json' \
   -d '{"name":"gpt-oss:20b"}'
+
+# chat streaming + message actions (requires running Ollama + loaded model)
+STREAM_SESSION=$(curl -s -X POST http://127.0.0.1:8000/api/sessions \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Streaming Demo"}' | jq -r '.id')
+curl -N -H 'Accept: text/event-stream' \
+  -H 'Content-Type: application/json' \
+  -d '{"session_id":'"${STREAM_SESSION}"',"prompt":"Hello there","model":"llama3"}' \
+  http://127.0.0.1:8000/api/chat
+curl http://127.0.0.1:8000/api/sessions/${STREAM_SESSION}/messages
+curl http://127.0.0.1:8000/api/sessions/${STREAM_SESSION}/metrics
+# pin / regenerate / delete the most recent assistant message (id 2 in a clean session)
+curl -X POST http://127.0.0.1:8000/api/sessions/${STREAM_SESSION}/messages/2/pin \
+  -H 'Content-Type: application/json' \
+  -d '{"pinned":true}'
+curl -X POST http://127.0.0.1:8000/api/sessions/${STREAM_SESSION}/messages/2/regenerate
+curl -X DELETE http://127.0.0.1:8000/api/sessions/${STREAM_SESSION}/messages/2
 ```
 
-Expected responses are HTTP 200 (or 201/204 for create/delete) with JSON bodies mirroring health info, persisted config payloads, session/message data, Ollama version strings, and model catalog metadata. When Ollama is unavailable, `/api/title` falls back to a deterministic title derived from the prompt, `/api/models` reports `ollama_status: "error"`, and pull/load/unload endpoints surface 502s mirroring the upstream error.
+Expected responses are HTTP 200 (or 201/204 for create/delete) with JSON bodies mirroring health info, persisted config payloads, session/message data, Ollama version strings, and model catalog metadata. The `/api/chat` SSE stream should emit `status`, repeated `chunk`, and `complete` events, then the message + metrics endpoints will show stored tokens/speeds. When Ollama is unavailable, `/api/title` falls back to a deterministic title derived from the prompt, `/api/models` reports `ollama_status: "error"`, and pull/load/unload endpoints surface 502s mirroring the upstream error.
 
 ## Continuous Integration
 GitHub Actions workflow (`.github/workflows/ci.yml`) validates backend (pytest, ruff, mypy) and frontend (lint, unit tests, Playwright smoke tests) on Ubuntu latest runners.

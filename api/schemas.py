@@ -14,6 +14,10 @@ class GenerationDefaults(BaseModel):
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     top_p: float = Field(default=0.9, ge=0.0, le=1.0)
     max_tokens: int | None = Field(default=None, ge=1)
+    top_k: int | None = Field(default=None, ge=1)
+    repeat_penalty: float | None = Field(default=None, ge=0.0)
+    context_window: int | None = Field(default=None, ge=1)
+    stop: list[str] = Field(default_factory=list)
 
 
 class ConfigBase(BaseModel):
@@ -84,6 +88,7 @@ class MessageCreate(BaseModel):
     completion_tokens: int | None = Field(default=None, ge=0)
     total_tokens: int | None = Field(default=None, ge=0)
     metrics: dict[str, Any] = Field(default_factory=dict)
+    is_pinned: bool = False
 
 
 class MessageRead(MessageCreate):
@@ -92,6 +97,105 @@ class MessageRead(MessageCreate):
     id: int
     session_id: int
     created_at: datetime
+
+
+class MessagePinRequest(BaseModel):
+    """Toggle a message pin flag."""
+
+    pinned: bool = Field(default=True)
+
+
+class PromptOptions(BaseModel):
+    """Per-request overrides for generation parameters."""
+
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    top_p: float | None = Field(default=None, ge=0.0, le=1.0)
+    top_k: int | None = Field(default=None, ge=1)
+    repeat_penalty: float | None = Field(default=None, ge=0.0)
+    context_window: int | None = Field(default=None, ge=1)
+    max_tokens: int | None = Field(default=None, ge=1)
+    stop: list[str] | None = None
+
+
+class ChatRequest(BaseModel):
+    """Request body for the streaming chat endpoint."""
+
+    session_id: int
+    prompt: str | None = Field(default=None, min_length=1)
+    model: str | None = None
+    system_prompt: str | None = None
+    options: PromptOptions | None = None
+    regenerate_message_id: int | None = Field(default=None, ge=1)
+
+
+class ChatChunkEvent(BaseModel):
+    """Emitted for each streamed chunk."""
+
+    type: Literal["chunk"] = "chunk"
+    delta: str
+    content: str
+
+
+class ChatCompletionEvent(BaseModel):
+    """Emitted after Ollama completes the generation."""
+
+    type: Literal["complete"] = "complete"
+    message_id: int
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+    metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class ChatStatusEvent(BaseModel):
+    """General status updates sent to the SSE client."""
+
+    type: Literal["status"] = "status"
+    message: str
+
+
+class ChatHeartbeatEvent(BaseModel):
+    """Periodic heartbeat event to keep the SSE connection alive."""
+
+    type: Literal["heartbeat"] = "heartbeat"
+    timestamp: datetime
+
+
+class ChatErrorEvent(BaseModel):
+    """Error event emitted before terminating the stream."""
+
+    type: Literal["error"] = "error"
+    message: str
+
+
+class MessageRegenerateResponse(BaseModel):
+    """Response payload containing data to trigger regeneration."""
+
+    session_id: int
+    assistant_message_id: int
+    prompt: str
+    model: str | None = None
+
+
+class MessageMetrics(BaseModel):
+    """Per-message token metrics."""
+
+    message_id: int
+    role: MessageRoleLiteral
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class SessionMetricsResponse(BaseModel):
+    """Aggregated metrics for a session."""
+
+    session_id: int
+    total_prompt_tokens: int = Field(default=0, ge=0)
+    total_completion_tokens: int = Field(default=0, ge=0)
+    total_messages: int = Field(default=0, ge=0)
+    messages: list[MessageMetrics]
 
 
 class MessageListResponse(BaseModel):

@@ -24,6 +24,13 @@ class Config(SQLModel, table=True):
     temperature: float = Field(default=0.7)
     top_p: float = Field(default=0.9)
     max_tokens: int | None = Field(default=None)
+    top_k: int | None = Field(default=None)
+    repeat_penalty: float | None = Field(default=None)
+    context_window: int | None = Field(default=None)
+    stop_sequences: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, default=list),
+    )
     theme: str = Field(default="system")
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
@@ -60,6 +67,7 @@ class Message(SQLModel, table=True):
     prompt_tokens: int | None = Field(default=None, ge=0)
     completion_tokens: int | None = Field(default=None, ge=0)
     total_tokens: int | None = Field(default=None, ge=0)
+    is_pinned: bool = Field(default=False)
     metrics: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column(JSON, default=dict),

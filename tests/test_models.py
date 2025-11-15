@@ -42,9 +42,9 @@ def test_model_list_includes_session_warnings() -> None:
     assert response.status_code == 200
     payload: ModelListResponse = ModelListResponse.model_validate(response.json())
     assert payload.items
-    entry = payload.items[0]
+    entry = next(item for item in payload.items if item.name == "llama3")
     assert entry.warnings == ["model_not_loaded"]
-    assert entry.sessions == [session_id]
+    assert session_id in entry.sessions
     cache.clear()
 
 

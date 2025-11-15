@@ -19,6 +19,10 @@ def _sample_payload() -> dict[str, Any]:
             "temperature": 0.65,
             "top_p": 0.8,
             "max_tokens": 256,
+            "top_k": 50,
+            "repeat_penalty": 1.1,
+            "context_window": 4096,
+            "stop": ["Observation:"],
         },
         "theme": "dark",
     }
@@ -34,6 +38,7 @@ def test_update_config_round_trip() -> None:
     assert payload["theme"] == "dark"
     assert payload["ollama_base_url"].rstrip("/") == "http://localhost:11434"
     assert payload["generation_defaults"]["max_tokens"] == 256
+    assert payload["generation_defaults"]["top_k"] == 50
 
 
 def test_version_proxy_uses_mock_transport() -> None:

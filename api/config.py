@@ -36,6 +36,10 @@ class AppSettings(BaseSettings):
     default_temperature: float = 0.7
     default_top_p: float = 0.9
     default_max_tokens: int | None = 512
+    default_top_k: int | None = None
+    default_repeat_penalty: float | None = None
+    default_context_window: int | None = None
+    default_stop_sequences: list[str] = Field(default_factory=list)
     default_theme: str = "system"
 
     sse_buffer_limit: int = 1024

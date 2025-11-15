@@ -45,6 +45,10 @@ class ConfigService:
             temperature=self.settings.default_temperature,
             top_p=self.settings.default_top_p,
             max_tokens=self.settings.default_max_tokens,
+            top_k=self.settings.default_top_k,
+            repeat_penalty=self.settings.default_repeat_penalty,
+            context_window=self.settings.default_context_window,
+            stop=list(self.settings.default_stop_sequences),
         )
         config = Config(
             ollama_base_url_encrypted=self._encrypt(str(self.settings.ollama_base_url)),
@@ -52,6 +56,10 @@ class ConfigService:
             temperature=defaults.temperature,
             top_p=defaults.top_p,
             max_tokens=defaults.max_tokens,
+            top_k=defaults.top_k,
+            repeat_penalty=defaults.repeat_penalty,
+            context_window=defaults.context_window,
+            stop_sequences=list(defaults.stop),
             theme=self.settings.default_theme,
         )
         self.session.add(config)
@@ -91,6 +99,10 @@ class ConfigService:
             config.temperature = gen.temperature
             config.top_p = gen.top_p
             config.max_tokens = gen.max_tokens
+            config.top_k = gen.top_k
+            config.repeat_penalty = gen.repeat_penalty
+            config.context_window = gen.context_window
+            config.stop_sequences = list(gen.stop)
         if payload.theme:
             config.theme = payload.theme
         config.updated_at = self._utcnow()
@@ -115,6 +127,10 @@ class ConfigService:
             temperature=payload.generation_defaults.temperature,
             top_p=payload.generation_defaults.top_p,
             max_tokens=payload.generation_defaults.max_tokens,
+            top_k=payload.generation_defaults.top_k,
+            repeat_penalty=payload.generation_defaults.repeat_penalty,
+            context_window=payload.generation_defaults.context_window,
+            stop_sequences=list(payload.generation_defaults.stop),
             theme=payload.theme,
         )
 
@@ -124,6 +140,10 @@ class ConfigService:
             temperature=config.temperature,
             top_p=config.top_p,
             max_tokens=config.max_tokens,
+            top_k=config.top_k,
+            repeat_penalty=config.repeat_penalty,
+            context_window=config.context_window,
+            stop=list(config.stop_sequences or []),
         )
         return ConfigRead(
             id=config.id or 0,

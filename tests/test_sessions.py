@@ -68,6 +68,53 @@ def test_session_crud_and_messages() -> None:
     assert stub.payload["prompt"] == "Hello from pytest"
 
 
+def test_message_actions_pin_delete_regenerate() -> None:
+    stub = _StubTitleService()
+    app.dependency_overrides[get_title_service] = lambda: stub
+    try:
+        with TestClient(app) as client:
+            session_id = client.post("/api/sessions", json={"title": "Actions"}).json()["id"]
+            user_payload = {
+                "role": "user",
+                "content": "Please remember this",
+                "model": "llama3",
+            }
+            client.post(f"/api/sessions/{session_id}/messages", json=user_payload)
+            assistant_payload = {
+                "role": "assistant",
+                "content": "Sure thing",
+                "model": "llama3",
+                "prompt_tokens": 2,
+                "completion_tokens": 2,
+                "total_tokens": 4,
+            }
+            assistant_id = client.post(
+                f"/api/sessions/{session_id}/messages", json=assistant_payload
+            ).json()["id"]
+
+            pin_resp = client.post(
+                f"/api/sessions/{session_id}/messages/{assistant_id}/pin", json={"pinned": True}
+            )
+            assert pin_resp.json()["is_pinned"] is True
+
+            regen_resp = client.post(
+                f"/api/sessions/{session_id}/messages/{assistant_id}/regenerate"
+            )
+            assert regen_resp.status_code == 200
+            regen_payload = regen_resp.json()
+            assert regen_payload["assistant_message_id"] == assistant_id
+            assert regen_payload["prompt"] == user_payload["content"]
+
+            delete_resp = client.delete(
+                f"/api/sessions/{session_id}/messages/{assistant_id}"
+            )
+            assert delete_resp.status_code == 204
+            items = client.get(f"/api/sessions/{session_id}/messages").json()["items"]
+            assert all(message["id"] != assistant_id for message in items)
+    finally:
+        app.dependency_overrides.pop(get_title_service, None)
+
+
 @pytest.mark.asyncio
 async def test_title_generation_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     with TestClient(app) as client:

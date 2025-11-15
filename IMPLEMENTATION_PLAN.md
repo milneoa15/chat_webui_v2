@@ -82,6 +82,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Manual SSE test: `curl -N :8000/api/models/pull -d '{"name":"llama3"}'` streams progress JSON lines.
 
 ## Phase 5 – Chat Streaming & Metrics Pipeline
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Implement `/api/chat` streaming endpoint with SSE, token metrics, and message persistence.
 - **Key Tasks:**
   - Create streaming generator using `httpx.AsyncClient.stream("POST", ollama /api/generate)` bridging chunked data to SSE (`fastapi-sse` or manual EventSource). Include heartbeats to keep connection alive.
@@ -95,9 +96,11 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Messages stored with streaming transcript; regenerate action overwrites previous assistant message.
   - Token metrics persisted and accessible via `/api/sessions/{id}/metrics`.
   - End-to-end test using pytest + respx mocking verifies SSE chunks and DB writes.
+  - Message actions (pin/delete/regenerate) exposed via REST endpoints.
 - **Verification:**
   - `uv run pytest tests/test_chat.py` with asyncio SSE client fixture.
   - Manual test using `curl -N -H "Accept: text/event-stream"` posting to `/api/chat`.
+  - Pin/delete/regenerate endpoints verified through `curl` (or Postman) responses.
 
 ## Phase 6 – Frontend Foundation (Routing, State, Theming)
 - **Goal:** Build React/Vite scaffolding aligned with backend contracts, theme system, and global state management.
