@@ -65,9 +65,25 @@ curl -X PUT http://127.0.0.1:8000/api/config \
 
 # (optional) verify Ollama connectivity if a daemon is running
 curl http://127.0.0.1:8000/api/version
+
+# sessions + messages
+SESSION_ID=$(curl -s -X POST http://127.0.0.1:8000/api/sessions \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Demo Session"}' | jq -r '.id')
+curl -X POST http://127.0.0.1:8000/api/sessions/${SESSION_ID}/messages \
+  -H 'Content-Type: application/json' \
+  -d '{"role":"user","content":"Hello backend","model":"llama3"}'
+curl "http://127.0.0.1:8000/api/sessions/${SESSION_ID}/messages?limit=50&offset=0"
+curl -X PATCH http://127.0.0.1:8000/api/sessions/${SESSION_ID} \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Renamed Session"}'
+curl -X POST http://127.0.0.1:8000/api/title \
+  -H 'Content-Type: application/json' \
+  -d "{\"session_id\":${SESSION_ID},\"prompt\":\"need fallback title\"}"
+curl -X DELETE http://127.0.0.1:8000/api/sessions/${SESSION_ID}
 ```
 
-Expected responses are HTTP 200 with JSON bodies mirroring health info, persisted config payloads, and Ollama version strings (or 502 if Ollama is offline).
+Expected responses are HTTP 200 (or 201/204 for create/delete) with JSON bodies mirroring health info, persisted config payloads, session/message data, and Ollama version strings (502 if Ollama is offline). When Ollama is unavailable, `/api/title` falls back to a deterministic title derived from the prompt.
 
 ## Continuous Integration
 GitHub Actions workflow (`.github/workflows/ci.yml`) validates backend (pytest, ruff, mypy) and frontend (lint, unit tests, Playwright smoke tests) on Ubuntu latest runners.

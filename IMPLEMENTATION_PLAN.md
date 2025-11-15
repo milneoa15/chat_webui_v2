@@ -44,6 +44,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - `curl http://localhost:8000/api/health` returns HTTP 200 with `db_status: "ok"`.
 
 ## Phase 3 – Session Persistence & Prompt Metadata
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Support chat session lifecycle storage, automatic title generation hooks, and prompt builder scaffolding in the backend.
 - **Key Tasks:**
   - Define SQLModel tables: `Session`, `Message`, `PromptMeta` capturing ids, timestamps, author role, tokens, model id, metrics.

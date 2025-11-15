@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AnyHttpUrl, BaseModel, Field
 
@@ -42,6 +42,80 @@ class ConfigRead(ConfigBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+
+MessageRoleLiteral = Literal["system", "user", "assistant", "tool"]
+
+
+class SessionCreate(BaseModel):
+    """Payload for creating sessions."""
+
+    title: str | None = Field(default=None, max_length=120)
+
+
+class SessionUpdate(BaseModel):
+    """Payload for updating session properties."""
+
+    title: str = Field(max_length=120, min_length=1)
+
+
+class SessionRead(BaseModel):
+    """Session representation."""
+
+    id: int
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class SessionListResponse(BaseModel):
+    """Envelope for paginated session listings (simple list wrapper)."""
+
+    items: list[SessionRead]
+
+
+class MessageCreate(BaseModel):
+    """Payload for persisting chat messages."""
+
+    role: MessageRoleLiteral
+    content: str = Field(min_length=1)
+    model: str | None = Field(default=None)
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+
+
+class MessageRead(MessageCreate):
+    """Response schema for stored messages."""
+
+    id: int
+    session_id: int
+    created_at: datetime
+
+
+class MessageListResponse(BaseModel):
+    """Wrapper for paginated message retrieval."""
+
+    items: list[MessageRead]
+    total: int
+    limit: int
+    offset: int
+
+
+class TitleRequest(BaseModel):
+    """Request body for title generation."""
+
+    session_id: int
+    prompt: str = Field(min_length=1)
+    model: str | None = None
+
+
+class TitleResponse(BaseModel):
+    """Response from title generation endpoint."""
+
+    session_id: int
+    title: str
 
 
 class HealthResponse(BaseModel):
