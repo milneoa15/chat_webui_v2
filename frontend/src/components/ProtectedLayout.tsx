@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { CommandPalette } from '@/components/CommandPalette'
 import { OfflineBanner } from '@/components/OfflineBanner'
+import { FirstRunWizard } from '@/components/FirstRunWizard'
 import { api } from '@/api/client'
 import { useConfigStore } from '@/stores/config'
 import clsx from 'clsx'
@@ -56,6 +57,7 @@ export function ProtectedLayout() {
   return (
     <div className="min-h-screen bg-[color:var(--app-gradient)] text-[color:var(--text-primary)]">
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <FirstRunWizard />
       <OfflineBanner visible={!isHealthy} onRetry={() => refetch()} />
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6 lg:py-8">
         <header className="flex flex-col gap-3 border-b border-[color:var(--border-strong)] pb-4 lg:flex-row lg:items-center lg:justify-between">

@@ -1,11 +1,10 @@
 """Chat streaming routes (SSE + WebSocket fallback)."""
 from __future__ import annotations
 
-from typing import cast
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, WebSocket
 from fastapi.responses import StreamingResponse
-from fastapi_sse import sse_response  # type: ignore[import-untyped]
 
 from ..dependencies import get_chat_service
 from ..schemas import ChatRequest
@@ -20,8 +19,15 @@ async def stream_chat(
 ) -> StreamingResponse:
     """Proxy streaming chat responses as SSE events."""
 
-    generator = service.stream_chat(payload)
-    return cast(StreamingResponse, sse_response(generator))
+    async def event_stream() -> AsyncIterator[str]:
+        async for event in service.stream_chat(payload):
+            yield f"data: {event.model_dump_json()}\n\n"
+
+    headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+    }
+    return StreamingResponse(event_stream(), media_type="text/event-stream", headers=headers)
 
 
 @router.websocket("/ws/chat")

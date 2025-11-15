@@ -122,6 +122,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - `npx playwright test tests/navigation.spec.ts` inside `frontend/`.
 
 ## Phase 7 – Frontend Chat & Model Workflows
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Deliver the user-facing experiences: guided setup, chat composer/streaming UI, model catalog management, and settings views.
 - **Key Tasks:**
   - Implement Guided First-Run modal wizard calling `/api/config` and verifying Ollama via `/api/config/test` endpoint; store encrypted URL.

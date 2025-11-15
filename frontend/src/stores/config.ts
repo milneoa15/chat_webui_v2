@@ -1,7 +1,12 @@
-import { api, type ConfigRead } from '@/api/client'
+import { api, type ConfigRead, type GenerationDefaults } from '@/api/client'
 import { create } from 'zustand'
 
 export type ThemeOption = 'graphite' | 'terminal' | 'solarized' | 'quartz'
+export type DensityOption = 'comfortable' | 'compact'
+type AppearancePreferences = {
+  fontScale: number
+  density: DensityOption
+}
 
 export const themePresets: Record<ThemeOption, { label: string; description: string }> = {
   graphite: { label: 'Dark Graphite', description: 'Low-glare interface tuned for focus.' },
@@ -11,6 +16,7 @@ export const themePresets: Record<ThemeOption, { label: string; description: str
 }
 
 const THEME_STORAGE_KEY = 'chatbot.theme.preferred'
+const APPEARANCE_STORAGE_KEY = 'chatbot.appearance.preferences'
 const THEME_OPTIONS: ThemeOption[] = ['graphite', 'terminal', 'solarized', 'quartz']
 
 const isThemeOption = (value: unknown): value is ThemeOption => THEME_OPTIONS.includes(value as ThemeOption)
@@ -29,21 +35,57 @@ const persistTheme = (theme: ThemeOption) => {
   }
 }
 
+const readAppearance = (): AppearancePreferences => {
+  if (typeof window === 'undefined') {
+    return { fontScale: 1, density: 'comfortable' }
+  }
+  try {
+    const stored = window.localStorage.getItem(APPEARANCE_STORAGE_KEY)
+    if (!stored) return { fontScale: 1, density: 'comfortable' }
+    const parsed = JSON.parse(stored) as AppearancePreferences
+    if (!parsed.fontScale || (parsed.density !== 'comfortable' && parsed.density !== 'compact')) {
+      return { fontScale: 1, density: 'comfortable' }
+    }
+    return parsed
+  } catch (error) {
+    console.warn('Unable to parse appearance preferences', error)
+    return { fontScale: 1, density: 'comfortable' }
+  }
+}
+
+const persistAppearance = (prefs: AppearancePreferences) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(prefs))
+  }
+}
+
+const applyAppearance = (prefs: AppearancePreferences) => {
+  if (typeof document === 'undefined') {
+    return
+  }
+  document.documentElement.style.setProperty('--font-scale', prefs.fontScale.toString())
+  document.documentElement.dataset.density = prefs.density
+}
+
 type ConfigState = {
   config?: ConfigRead
   theme: ThemeOption
+  appearance: AppearancePreferences
   status: 'idle' | 'loading' | 'error'
   error?: string
   hasLoaded: boolean
   loadConfig: (force?: boolean) => Promise<void>
   updateTheme: (theme: ThemeOption) => Promise<void>
   updateOllamaBaseUrl: (url: string) => Promise<void>
+  updateGenerationDefaults: (defaults: GenerationDefaults) => Promise<void>
+  updateAppearance: (prefs: Partial<AppearancePreferences>) => void
   resetError: () => void
 }
 
 export const useConfigStore = create<ConfigState>((set, get) => ({
   config: undefined,
   theme: readStoredTheme(),
+  appearance: readAppearance(),
   status: 'idle',
   error: undefined,
   hasLoaded: false,
@@ -72,6 +114,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   async updateTheme(theme) {
     set({ theme })
     persistTheme(theme)
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.theme = theme
+    }
     try {
       const config = await api.config.update({ theme })
       set({ config, error: undefined })
@@ -93,9 +138,30 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       throw error
     }
   },
+  async updateGenerationDefaults(defaults) {
+    try {
+      const config = await api.config.update({ generation_defaults: defaults })
+      set({ config, error: undefined })
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Unable to update generation defaults',
+      })
+      throw error
+    }
+  },
+  updateAppearance(prefs) {
+    const next = { ...get().appearance, ...prefs }
+    set({ appearance: next })
+    persistAppearance(next)
+    applyAppearance(next)
+  },
   resetError() {
     if (get().error) {
       set({ error: undefined })
     }
   },
 }))
+
+if (typeof window !== 'undefined') {
+  applyAppearance(readAppearance())
+}
