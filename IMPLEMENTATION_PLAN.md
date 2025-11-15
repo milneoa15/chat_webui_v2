@@ -103,6 +103,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Pin/delete/regenerate endpoints verified through `curl` (or Postman) responses.
 
 ## Phase 6 – Frontend Foundation (Routing, State, Theming)
+**Status:** ✅ Completed – 2025-11-15
 - **Goal:** Build React/Vite scaffolding aligned with backend contracts, theme system, and global state management.
 - **Key Tasks:**
   - Configure React Router with routes `/chat/:sessionId?`, `/models`, `/settings`; add protected layout verifying backend health before rendering.

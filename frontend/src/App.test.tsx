@@ -1,13 +1,30 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { api, type HealthResponse } from '@/api/client'
 
-const queryClient = new QueryClient()
+const buildHealthResponse = (): HealthResponse => ({
+  status: 'ok',
+  db_status: 'ok',
+  ollama_status: 'ok',
+  scheduler_status: 'running',
+  cached_model_count: 0,
+  uptime_seconds: 12,
+  timestamp: new Date().toISOString(),
+  version: '0.1.0',
+})
 
 describe('App shell', () => {
-  it('renders navigation links', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renders navigation links once health check succeeds', async () => {
+    vi.spyOn(api, 'health').mockResolvedValue(buildHealthResponse())
+    const queryClient = new QueryClient()
+
     render(
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
@@ -16,7 +33,7 @@ describe('App shell', () => {
       </BrowserRouter>,
     )
 
-    expect(screen.getByText(/Chatbot Web UI v2/i)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText(/Control center/i)).toBeInTheDocument())
     expect(screen.getByRole('link', { name: 'Chat' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Models' })).toBeInTheDocument()
   })
