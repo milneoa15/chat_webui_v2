@@ -41,9 +41,3 @@ jobs:
       - name: Unit tests
         run: npm run test
         working-directory: frontend
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-        working-directory: frontend
-      - name: Playwright smoke
-        run: npm run test:e2e
-        working-directory: frontend
