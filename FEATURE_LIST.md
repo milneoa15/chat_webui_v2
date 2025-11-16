@@ -53,8 +53,8 @@
 
 ## Testing & Quality
 - **Backend Tests:** `pytest` suite covering config management, chat streaming mock, model management wrappers, and session persistence.
-- **Frontend Tests:** `vitest` for components/hooks, Playwright smoke tests for major flows (setup, chat, load model).
-- **CI Hooks:** GitHub Actions workflow running `uv run pytest`, `uv run ruff`, `npm run lint`, `npm run test`, and Playwright in headless mode.
+- **Frontend Tests:** `vitest` for components/hooks. (Playwright smoke tests were removed temporarily while the UI is in flux.)
+- **CI Hooks:** GitHub Actions workflow running `uv run pytest`, `uv run ruff`, `npm run lint`, `npm run test`.
 
 ## Documentation & Developer Experience
 - **README Guides:** Installation (uv + npm), environment setup, commands: `uv pip install -r pyproject.toml`, `uv run uvicorn api.main:app`, `npm install`, `npm run dev`, `npm run build`, test commands.

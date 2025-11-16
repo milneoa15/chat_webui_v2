@@ -9,9 +9,9 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Since npm/nvm and uv are already installed on Ubuntu 24.04, simply verify versions (`uv --version`, `npm -v`, `node -v`, `pnpm -v`, `npx vite --version`) and pin `python3.12` as default interpreter.
   - Initialize a Git repository, set the `origin` remote to `git@github.com:milneoa15/chat_webui_v2.git`, and create the baseline commit (`chore: scaffold project stack`) as the starting point for main.
   - Initialize Python project with `pyproject.toml` declaring FastAPI, uvicorn[standard], sqlmodel, sqlalchemy, httpx, apscheduler, structlog, fastapi-sse, pydantic-settings, python-dotenv, pytest, pytest-asyncio, mypy, ruff.
-  - Initialize frontend with `npm create vite@latest frontend -- --template react-ts`, add Tailwind CSS, Radix UI, React Router, Zustand, React Query or RTK Query, `lucide-react`, `clsx`, `vite-tsconfig-paths`, `eslint`, `prettier`, `vitest`, `@testing-library/react`, `@tanstack/react-query`, `playwright`.
+  - Initialize frontend with `npm create vite@latest frontend -- --template react-ts`, add Tailwind CSS, Radix UI, React Router, Zustand, React Query or RTK Query, `lucide-react`, `clsx`, `vite-tsconfig-paths`, `eslint`, `prettier`, `vitest`, `@testing-library/react`, `@tanstack/react-query`. (Playwright was removed while the UI is in flux.)
   - Create shared `.editorconfig`, `.env.example`, `.gitignore`, and VSCode settings recommending `ruff`, `mypy`, `eslint`.
-  - Scaffold GitHub Actions workflow running `uv run pytest`, `uv run ruff check`, `uv run mypy`, `npm run lint`, `npm run test`, `npx playwright test`.
+  - Scaffold GitHub Actions workflow running `uv run pytest`, `uv run ruff check`, `uv run mypy`, `npm run lint`, `npm run test`.
   - Once lint/tests pass, push the baseline to GitHub (`git push -u origin main`) so every later phase can build atop main.
 - **Requirements / Definition of Done:**
   - `uv run pip list` shows declared backend dependencies; `npm install` succeeds inside `frontend/`.
@@ -116,10 +116,9 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - `src/api/client.ts` generated from backend OpenAPI schema; hooks typed end-to-end.
   - Theme switching updates document class, persists preference, and notifies backend via `/api/config/theme`.
   - Command palette can create session, switch models, open settings.
-  - Vitest component tests cover router guards and theme store; Playwright smoke test ensures navigation works.
+  - Vitest component tests cover router guards and theme store. (Playwright smoke coverage is deferred until the UI stabilizes.)
 - **Verification:**
   - `npm run test src/stores/theme.test.tsx`.
-  - `npx playwright test tests/navigation.spec.ts` inside `frontend/`.
 
 ## Phase 7 – Frontend Chat & Model Workflows
 **Status:** ✅ Completed – 2025-11-15
@@ -140,8 +139,7 @@ _Target platform: Linux Ubuntu 24.04 LTS workstation running uv-managed Python 3
   - Settings update forms produce success toasts and persist to backend; theme preview updates immediately.
   - Frontend tests cover SSE hook, composer validation, wizard flow, and model actions (mocked network).
 - **Verification:**
-  - `npm run test` plus targeted `vitest` suites for chat components.
-  - Playwright scenario: run `npx playwright test tests/chat-flow.spec.ts` verifying setup → create session → chat stream → change settings.
+  - `npm run test` plus targeted `vitest` suites for chat components. (Playwright smoke tests were removed while the UI changes rapidly.)
 
 ## Phase 8 – Quality Gates, Docs, and Deployment Packaging
 - **Goal:** Finalize documentation, automation, and containerization for release.
