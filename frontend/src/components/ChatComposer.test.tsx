@@ -17,7 +17,7 @@ const defaults: GenerationDefaults = {
 describe('ChatComposer', () => {
   it('submits prompt with overrides', async () => {
     const onSend = vi.fn().mockResolvedValue(undefined)
-    render(<ChatComposer defaults={defaults} isStreaming={false} disabled={false} onSend={onSend} onCancel={vi.fn()} />)
+    render(<ChatComposer defaults={defaults} model="llama3" isStreaming={false} disabled={false} onSend={onSend} onCancel={vi.fn()} />)
 
     const textarea = screen.getByPlaceholderText(/ask anything/i)
     fireEvent.change(textarea, { target: { value: 'Hello assistant' } })

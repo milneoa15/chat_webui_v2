@@ -1,24 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import * as Dialog from '@radix-ui/react-dialog'
-import { AlertTriangle } from 'lucide-react'
-import type { HealthResponse, MessageRead, SessionRead } from '@/api/client'
+import type { MessageRead, SessionRead } from '@/api/client'
 import { ChatSidebar } from '@/components/ChatSidebar'
 import { ChatTranscript } from '@/components/ChatTranscript'
 import { ChatComposer } from '@/components/ChatComposer'
-import { ChatMetricsHUD } from '@/components/ChatMetricsHUD'
+import { ModelSelector } from '@/components/ModelSelector'
 import { useChatSession } from '@/hooks/useChatSession'
 import { useConfigStore } from '@/stores/config'
 import { useSessionsStore } from '@/stores/sessions'
 
-type OutletContext = {
-  health?: HealthResponse
-}
-
 export function ChatPage() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { health } = useOutletContext<OutletContext>()
   const {
     sessions,
     status,
@@ -36,8 +30,8 @@ export function ChatPage() {
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<SessionRead | null>(null)
   const [bannerMessage, setBannerMessage] = useState<string | undefined>()
-  const { messages, error, stream, lastCompletion, sendPrompt, cancelStream, deleteMessage, togglePin, regenerate, session } =
-    useChatSession(selectedSessionId)
+  const [sessionModels, setSessionModels] = useState<Record<number, string>>({})
+  const { messages, error, stream, sendPrompt, cancelStream, deleteMessage, togglePin, regenerate, session } = useChatSession(selectedSessionId)
 
   useEffect(() => {
     if (!sessions.length && status === 'idle') {
@@ -108,125 +102,136 @@ export function ChatPage() {
     }
   }
 
-  const selectedMetrics = selectedSessionId ? metrics[selectedSessionId] : undefined
   const composerDefaultsKey = config?.generation_defaults ? JSON.stringify(config.generation_defaults) : 'no-defaults'
-  const healthCards = useMemo(
-    () => [
-      { label: 'Database', value: health?.db_status ?? 'checking' },
-      { label: 'Ollama', value: health?.ollama_status ?? 'checking' },
-      { label: 'Scheduler', value: health?.scheduler_status ?? 'checking' },
-    ],
-    [health?.db_status, health?.ollama_status, health?.scheduler_status],
-  )
+  const hasSessions = sessions.length > 0
+  const showPlaceholder = !session
+  const activeModel = session ? sessionModels[session.id] : undefined
+  const composerDisabled = !session || !activeModel
 
-  const showEmptyState = !selectedSessionId && !sessions.length
+  const persistModelSelection = (targetSessionId: number, model?: string) => {
+    setSessionModels((prev) => {
+      const next = { ...prev }
+      if (!model) {
+        delete next[targetSessionId]
+      } else {
+        next[targetSessionId] = model
+      }
+      return next
+    })
+  }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
-      <ChatSidebar
-        sessions={sessions}
-        status={status}
-        error={sessionError}
-        metrics={metrics}
-        selectedSessionId={selectedSessionId}
-        onSelect={handleSelectSession}
-        onCreate={handleCreateSession}
-        onRefresh={() => {
-          void refresh()
-        }}
-        onRenameRequest={(session) => {
-          setRenameTarget(session)
-          setRenameValue(session.title)
-        }}
-        onDeleteRequest={(session) => setDeleteTarget(session)}
-      />
+    <div className="flex h-full flex-col gap-4 overflow-hidden lg:flex-row">
+      <div className="w-full shrink-0 lg:w-[320px]">
+        <ChatSidebar
+          sessions={sessions}
+          status={status}
+          error={sessionError}
+          metrics={metrics}
+          selectedSessionId={selectedSessionId}
+          onSelect={handleSelectSession}
+          onCreate={handleCreateSession}
+          onRefresh={() => {
+            void refresh()
+          }}
+          onRenameRequest={(session) => {
+            setRenameTarget(session)
+            setRenameValue(session.title)
+          }}
+          onDeleteRequest={(session) => setDeleteTarget(session)}
+        />
+      </div>
 
-      <section className="space-y-5">
-        <div className="space-y-4 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-6">
-          <header className="flex flex-col gap-3 border-b border-[color:var(--border-strong)] pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]">Session diagnostics</p>
-              <h2 className="text-2xl font-semibold text-[color:var(--text-primary)]">
-                {session?.title ?? 'No session selected'}
-              </h2>
-              <p className="text-sm text-[color:var(--text-muted)]">
-                {session ? `Updated ${new Date(session.updated_at).toLocaleString()}` : 'Create or select a chat to get started.'}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  void refresh()
-                }}
-                className="rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[color:var(--text-muted)]"
-              >
-                Refresh
-              </button>
-              <button
-                onClick={() => session && setRenameTarget(session)}
-                disabled={!session}
-                className="rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[color:var(--text-muted)] disabled:opacity-40"
-              >
-                Rename
-              </button>
-              <button
-                onClick={() => session && setDeleteTarget(session)}
-                disabled={!session}
-                className="rounded-full border border-red-400/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-red-200 disabled:opacity-40"
-              >
-                Delete
-              </button>
-            </div>
-          </header>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {healthCards.map((card) => (
-              <article key={card.label} className="rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-4">
-                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]">{card.label}</p>
-                <p className="mt-2 text-lg font-semibold capitalize text-[color:var(--text-primary)]">{card.value}</p>
-              </article>
-            ))}
-          </div>
-          <ChatMetricsHUD lastCompletion={lastCompletion} sessionMetrics={selectedMetrics} isStreaming={stream.active} />
-        </div>
-
-        {showEmptyState ? (
-          <div className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-10 text-center">
-            <AlertTriangle className="mx-auto size-10 text-[color:var(--text-muted)]" />
-            <p className="mt-4 text-lg font-semibold text-[color:var(--text-primary)]">Create your first session</p>
-            <p className="text-sm text-[color:var(--text-muted)]">Once a session exists the chat history, composer, and metrics will appear here.</p>
+      <section className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)]">
+        {showPlaceholder ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center text-sm text-[color:var(--text-muted)]">
+            <p className="font-mono text-xs uppercase tracking-[0.45em]">{hasSessions ? 'Select a session' : 'No sessions yet'}</p>
+            <p className="text-lg font-semibold text-[color:var(--text-primary)]">
+              {hasSessions ? 'Use the left rail to choose a conversation.' : 'Create your first conversation to begin.'}
+            </p>
           </div>
         ) : (
           <>
-            <ChatTranscript
-              messages={messages}
-              streamContent={stream.content}
-              streamActive={stream.active}
-              streamStatus={stream.status}
-              onCopy={handleCopy}
-              onDelete={(message) => {
-                void deleteMessage(message.id)
-              }}
-              onRegenerate={(message) => {
-                if (message.role === 'assistant') {
-                  void regenerate(message.id)
-                }
-              }}
-              onShare={handleShare}
-              onTogglePin={(message) => {
-                void togglePin(message)
-              }}
-            />
-            {bannerMessage && <p className="text-center text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]">{bannerMessage}</p>}
-            <ChatComposer
-              key={composerDefaultsKey}
-              defaults={config?.generation_defaults}
-              disabled={!session}
-              isStreaming={stream.active}
-              statusMessage={stream.status}
-              error={error}
-              onSend={(options) => sendPrompt(options)}
-              onCancel={cancelStream}
-            />
+            <header className="border-b border-[color:var(--border-strong)] px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.45em] text-[color:var(--text-muted)]">Active Session</p>
+                  <p className="text-xl font-semibold text-[color:var(--text-primary)]">{session.title}</p>
+                  <p className="text-xs text-[color:var(--text-muted)]">Updated {new Date(session.updated_at).toLocaleString()}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-[color:var(--text-muted)]">
+                  <button
+                    onClick={() => {
+                      void refresh()
+                    }}
+                    className="rounded-full border border-[color:var(--border-strong)] px-4 py-2"
+                  >
+                    Sync
+                  </button>
+                  <button className="rounded-full border border-[color:var(--border-strong)] px-4 py-2" onClick={() => setRenameTarget(session)}>
+                    Rename
+                  </button>
+                  <button className="rounded-full border border-red-400/40 px-4 py-2 text-red-200" onClick={() => setDeleteTarget(session)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <div className="border-b border-[color:var(--border-strong)] px-5 py-3">
+              <ModelSelector
+                selectedModel={activeModel}
+                disabled={!session}
+                onSelect={(model) => {
+                  if (session) {
+                    persistModelSelection(session.id, model)
+                  }
+                }}
+                onClear={() => {
+                  if (session) {
+                    persistModelSelection(session.id)
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex flex-1 flex-col gap-4 overflow-hidden px-5 py-4">
+              <div className="flex-1 overflow-hidden rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)]">
+                <ChatTranscript
+                  messages={messages}
+                  streamContent={stream.content}
+                  streamActive={stream.active}
+                  streamStatus={stream.status}
+                  onCopy={handleCopy}
+                  onDelete={(message) => {
+                    void deleteMessage(message.id)
+                  }}
+                  onRegenerate={(message) => {
+                    if (message.role === 'assistant') {
+                      void regenerate(message.id)
+                    }
+                  }}
+                  onShare={handleShare}
+                  onTogglePin={(message) => {
+                    void togglePin(message)
+                  }}
+                />
+              </div>
+              {bannerMessage && (
+                <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">{bannerMessage}</p>
+              )}
+              <ChatComposer
+                key={composerDefaultsKey}
+                defaults={config?.generation_defaults}
+                model={activeModel}
+                disabled={composerDisabled}
+                isStreaming={stream.active}
+                statusMessage={stream.status}
+                error={error}
+                onSend={(options) => sendPrompt(options)}
+                onCancel={cancelStream}
+              />
+            </div>
           </>
         )}
       </section>

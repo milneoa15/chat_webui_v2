@@ -14,7 +14,7 @@ export function OfflineBanner({ visible, message, onRetry }: OfflineBannerProps)
 
   return (
     <div className="sticky top-0 z-30 border-b border-[color:var(--offline-border)] bg-[color:var(--surface-warning)] text-[color:var(--warning-text)]">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3 text-sm font-medium">
+      <div className="flex items-center justify-between gap-4 px-6 py-3 text-sm font-medium">
         <div className="flex items-center gap-2">
           <WifiOff className="size-4" />
           <span>{message ?? 'Backend unreachable. Check the FastAPI service and retry.'}</span>

@@ -7,6 +7,7 @@ import clsx from 'clsx'
 
 export type ChatComposerProps = {
   defaults?: GenerationDefaults
+  model?: string
   disabled?: boolean
   isStreaming: boolean
   statusMessage?: string
@@ -15,12 +16,11 @@ export type ChatComposerProps = {
   onCancel: () => void
 }
 
-export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, error, onSend, onCancel }: ChatComposerProps) {
+export function ChatComposer({ defaults, model, disabled, isStreaming, statusMessage, error, onSend, onCancel }: ChatComposerProps) {
   const [prompt, setPrompt] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
   const [showTuning, setShowTuning] = useState(false)
   const [showSystemPrompt, setShowSystemPrompt] = useState(false)
-  const [model, setModel] = useState(() => defaults?.model ?? '')
   const [temperature, setTemperature] = useState(() => defaults?.temperature ?? 0.7)
   const [topP, setTopP] = useState(() => defaults?.top_p ?? 0.9)
   const [topK, setTopK] = useState<string>(() => defaults?.top_k?.toString() ?? '')
@@ -51,7 +51,7 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
   }, [stopSequences])
 
   const handleSend = async () => {
-    if (!isPromptValid || disabled) return
+    if (!isPromptValid || disabled || !model) return
     const overrides: ChatSendOptions['overrides'] = {
       temperature,
       top_p: topP,
@@ -63,7 +63,7 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
     }
     await onSend({
       prompt: prompt.trim(),
-      model: model || defaults?.model,
+      model,
       systemPrompt: systemPrompt.trim() || undefined,
       overrides,
     })
@@ -104,15 +104,14 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
         >
           <Settings2 className="size-4" /> Parameters
         </button>
-        <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] px-3 py-1">
-          Model
-          <input
-            className="bg-transparent text-sm text-[color:var(--text-primary)] outline-none"
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-            placeholder={defaults?.model}
-          />
-        </div>
+        <span
+          className={clsx(
+            'inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono',
+            model ? 'border-[color:var(--border-strong)] text-[color:var(--text-primary)]' : 'border-red-400/50 text-red-200',
+          )}
+        >
+          {model ? `Using ${model}` : 'Select a model to chat'}
+        </span>
         {statusMessage && <span className="rounded-full bg-[color:var(--surface-muted)] px-3 py-1">{statusMessage}</span>}
         {error && <span className="rounded-full bg-red-500/10 px-3 py-1 text-red-200">{error}</span>}
       </div>
@@ -120,7 +119,7 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
       {showSystemPrompt && (
         <TextareaAutosize
           minRows={2}
-          className="w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none"
+          className="w-full resize-none rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none"
           value={systemPrompt}
           onChange={(event) => setSystemPrompt(event.target.value)}
           placeholder="You can steer the assistant with a system prompt"
@@ -138,8 +137,8 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
         </button>
         <TextareaAutosize
           minRows={3}
-          maxRows={10}
-          className="flex-1 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-base)] px-4 py-3 text-base text-[color:var(--text-primary)] outline-none"
+          maxRows={12}
+          className="flex-1 resize-none rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-base)] px-4 py-3 text-base text-[color:var(--text-primary)] outline-none"
           placeholder="Ask anything…"
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
@@ -254,7 +253,7 @@ export function ChatComposer({ defaults, disabled, isStreaming, statusMessage, e
             Stop sequences (one per line)
             <TextareaAutosize
               minRows={2}
-              className="mt-2 w-full rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] px-3 py-2"
+              className="mt-2 w-full resize-none rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] px-3 py-2"
               value={stopSequences}
               onChange={(event) => setStopSequences(event.target.value)}
               id={ids.stop}

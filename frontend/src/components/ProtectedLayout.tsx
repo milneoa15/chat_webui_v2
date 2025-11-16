@@ -55,54 +55,52 @@ export function ProtectedLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--app-gradient)] text-[color:var(--text-primary)]">
+    <div className="flex min-h-screen flex-col bg-[color:var(--surface-base)] text-[color:var(--text-primary)]">
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <FirstRunWizard />
       <OfflineBanner visible={!isHealthy} onRetry={() => refetch()} />
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6 lg:py-8">
-        <header className="flex flex-col gap-3 border-b border-[color:var(--border-strong)] pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]">Chatbot Web UI v2</p>
-            <h1 className="text-3xl font-semibold text-[color:var(--text-primary)]">Control center</h1>
-          </div>
-          <div className="flex flex-col gap-2 text-sm text-[color:var(--text-muted)] lg:items-end">
-            <span className={clsx('inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs', statusPill.className)}>
-              <span className={clsx('size-2 rounded-full', isHealthy ? 'bg-emerald-300' : 'bg-amber-300 animate-pulse')} />
-              {statusPill.label}
-            </span>
-            <button
-              className="inline-flex items-center justify-center rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-sm font-medium text-[color:var(--text-primary)] transition hover:bg-[color:var(--surface-muted)]"
-              onClick={() => setPaletteOpen(true)}
-            >
-              ⌘K Command Palette
-            </button>
-          </div>
-        </header>
-
-        <nav className="flex flex-wrap gap-3 text-sm font-medium">
-          {routes.map((route) => (
-            <NavLink
-              key={route.path}
-              to={route.path}
-              className={({ isActive }) =>
-                clsx(
-                  'rounded-full border px-4 py-2 transition',
-                  isActive
-                    ? 'border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] text-[color:var(--text-primary)]'
-                    : 'border-transparent text-[color:var(--text-muted)] hover:border-[color:var(--border-strong)]',
-                )
-              }
-            >
-              {route.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <main className="pb-10">
+      <header className="flex flex-col gap-4 border-b border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.45em] text-[color:var(--text-muted)]">Chatbot Web UI v2</p>
+          <p className="text-2xl font-semibold text-[color:var(--text-primary)]">Terminal Console</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--text-muted)]">
+          <nav className="flex flex-wrap items-center gap-2 font-mono">
+            {routes.map((route) => (
+              <NavLink
+                key={route.path}
+                to={route.path}
+                className={({ isActive }) =>
+                  clsx(
+                    'rounded-md border px-3 py-1 transition',
+                    isActive
+                      ? 'border-[color:var(--accent-primary)] text-[color:var(--text-primary)]'
+                      : 'border-transparent hover:border-[color:var(--border-strong)]',
+                  )
+                }
+              >
+                {route.label}
+              </NavLink>
+            ))}
+          </nav>
+          <span className={clsx('inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px]', statusPill.className)}>
+            <span className={clsx('size-2 rounded-full', isHealthy ? 'bg-emerald-300' : 'bg-amber-300 animate-pulse')} />
+            {statusPill.label}
+          </span>
+          <button
+            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-xs font-semibold tracking-[0.35em] text-[color:var(--text-primary)] transition hover:bg-[color:var(--surface-panel)]"
+            onClick={() => setPaletteOpen(true)}
+          >
+            ⌘K
+          </button>
+        </div>
+      </header>
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden px-4 py-4 lg:px-8 lg:py-6">
           {isHealthy ? (
             <Outlet context={{ health: data }} />
           ) : (
-            <div className="rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-8 text-center">
+            <div className="h-full rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-8 text-center">
               <p className="text-lg font-semibold">Waiting for backend connection...</p>
               <p className="mt-2 text-sm text-[color:var(--text-muted)]">
                 Start the FastAPI server on port 8000 and press retry to continue.

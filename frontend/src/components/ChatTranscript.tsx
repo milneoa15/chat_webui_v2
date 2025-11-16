@@ -34,7 +34,7 @@ export function ChatTranscript({
   }, [messages, streamContent])
 
   return (
-    <div ref={containerRef} className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-4">
+    <div ref={containerRef} className="flex h-full flex-col gap-4 overflow-y-auto px-4 py-4">
       {messages.map((message) => (
         <ChatMessage
           key={message.id}
