@@ -8,6 +8,8 @@ test('primary navigation flows between pages', async ({ page }) => {
   await expect(page.getByText('Ollama Endpoint')).toBeVisible()
 
   await page.getByRole('link', { name: 'Settings' }).click()
+  await expect(page.getByText('Workspace settings')).toBeVisible()
+  await page.getByRole('button', { name: 'Appearance' }).click()
   await expect(page.getByText('Theme Presets')).toBeVisible()
 
   await page.getByRole('link', { name: 'Chat' }).click()
