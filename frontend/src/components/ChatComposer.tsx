@@ -43,7 +43,7 @@ export function ChatComposer({ model, disabled, isStreaming, statusMessage, erro
       <TextareaAutosize
         minRows={4}
         className="chat-composer-input w-full resize-none bg-transparent px-3 py-2 text-base leading-relaxed text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-0"
-        placeholder={composerDisabled ? 'Load a model to begin…' : 'Type a prompt'}
+        placeholder={composerDisabled ? 'Load a model to begin…' : '>'}
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
         onKeyDown={(event) => {
