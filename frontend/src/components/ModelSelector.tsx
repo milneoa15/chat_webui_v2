@@ -9,9 +9,10 @@ export type ModelSelectorProps = {
   disabled?: boolean
   onSelect: (model: string) => void
   onClear: () => void
+  variant?: 'default' | 'minimal'
 }
 
-export function ModelSelector({ selectedModel, disabled, onSelect, onClear }: ModelSelectorProps) {
+export function ModelSelector({ selectedModel, disabled, onSelect, onClear, variant = 'default' }: ModelSelectorProps) {
   const { models, status, refresh } = useModelsStore()
   const [busyModel, setBusyModel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | undefined>()
@@ -62,13 +63,64 @@ export function ModelSelector({ selectedModel, disabled, onSelect, onClear }: Mo
     }
   }
 
+  if (variant === 'minimal') {
+    return (
+      <div className="flex items-center gap-2 text-[color:var(--text-muted)]">
+        <select
+          className="min-w-[120px] border border-[color:var(--border-strong)] bg-transparent px-2 py-1 text-sm text-[color:var(--text-primary)]"
+          value={selectedModel ?? 'none'}
+          onChange={(event) => {
+            const next = event.target.value
+            if (next === 'none') {
+              onClear()
+              return
+            }
+            void handleLoad(next)
+          }}
+          disabled={busyModel !== null || disabled}
+        >
+          <option value="none">none</option>
+          {options.map((model) => (
+            <option key={model.name} value={model.name}>
+              {model.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="flex size-7 items-center justify-center border border-[color:var(--border-strong)] text-[color:var(--text-muted)] hover:text-[color:var(--accent-primary)] disabled:opacity-40"
+          onClick={() => {
+            void refresh()
+          }}
+          disabled={status === 'loading'}
+          title="Scan"
+        >
+          <RefreshCw className={clsx('size-4', status === 'loading' && 'animate-spin')} />
+          <span className="sr-only">Scan models</span>
+        </button>
+        <button
+          type="button"
+          className="flex size-7 items-center justify-center border border-[color:var(--border-strong)] text-[color:var(--text-muted)] hover:text-[color:var(--accent-primary)] disabled:opacity-40"
+          onClick={() => {
+            void handleUnload()
+          }}
+          disabled={!selectedModel || busyModel !== null}
+          title="Eject"
+        >
+          <LogOut className="size-4" />
+          <span className="sr-only">Eject model</span>
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] px-4 py-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex flex-1 flex-col text-xs uppercase tracking-[0.4em] text-[color:var(--text-muted)]">
-          Model
+    <div className="flex flex-col gap-2 text-[10px] uppercase tracking-[0.35em] text-[color:var(--text-muted)]">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col">
+          <span>Loaded model</span>
           <select
-            className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
+            className="mt-2 min-w-[220px] border border-[color:var(--border-strong)] bg-transparent px-3 py-2 text-sm text-[color:var(--text-primary)]"
             value={selectedModel ?? ''}
             onChange={(event) => {
               const next = event.target.value
@@ -83,42 +135,44 @@ export function ModelSelector({ selectedModel, disabled, onSelect, onClear }: Mo
             </option>
             {options.map((model) => (
               <option key={model.name} value={model.name}>
-                {model.loaded ? '[loaded]' : '[idle]'} {model.name}
+                {model.name}
               </option>
             ))}
           </select>
         </label>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] px-3 py-2 text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]"
-          onClick={() => {
-            void refresh()
-          }}
-          disabled={status === 'loading'}
-        >
-          <RefreshCw className={clsx('size-4', status === 'loading' && 'animate-spin')} />
-          Scan
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] px-3 py-2 text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)] disabled:opacity-40"
-          onClick={() => {
-            void handleUnload()
-          }}
-          disabled={!selectedModel || busyModel !== null}
-        >
-          <LogOut className="size-4" />
-          Eject
-        </button>
+        <div className="flex items-center gap-2 text-xs">
+          <button
+            type="button"
+            className="border border-[color:var(--border-strong)] px-3 py-2 tracking-[0.35em] text-[color:var(--text-muted)] hover:text-[color:var(--accent-primary)] disabled:opacity-40"
+            onClick={() => {
+              void refresh()
+            }}
+            disabled={status === 'loading'}
+          >
+            <RefreshCw className={clsx('mr-1 inline size-4', status === 'loading' && 'animate-spin')} />
+            Scan
+          </button>
+          <button
+            type="button"
+            className="border border-[color:var(--border-strong)] px-3 py-2 tracking-[0.35em] text-[color:var(--text-muted)] hover:text-[color:var(--accent-primary)] disabled:opacity-40"
+            onClick={() => {
+              void handleUnload()
+            }}
+            disabled={!selectedModel || busyModel !== null}
+          >
+            <LogOut className="mr-1 inline size-4" />
+            Eject
+          </button>
+        </div>
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-[color:var(--text-muted)]">
+      <div className="flex items-center gap-2 text-xs text-[color:var(--text-muted)]">
         {busyModel ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            <span>Contacting {busyModel}...</span>
+            <span>Contacting {busyModel}…</span>
           </>
         ) : (
-          message && <span>{message}</span>
+          <span>{message ?? (selectedModel ? `Using ${selectedModel}` : 'No model loaded')}</span>
         )}
       </div>
     </div>

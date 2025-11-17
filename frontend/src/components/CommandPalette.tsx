@@ -28,7 +28,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-24 w-[520px] -translate-x-1/2 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-4 shadow-2xl">
+        <Dialog.Content className="fixed left-1/2 top-24 w-[520px] -translate-x-1/2 rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-4">
           <Command>
             <Command.Input placeholder="Search actions" className="w-full bg-transparent p-3 text-lg outline-none" />
             <Command.List className="max-h-80 space-y-2 overflow-auto text-sm">

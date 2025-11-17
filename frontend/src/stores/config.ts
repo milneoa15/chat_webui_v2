@@ -17,6 +17,7 @@ export const themePresets: Record<ThemeOption, { label: string; description: str
 
 const THEME_STORAGE_KEY = 'chatbot.theme.preferred'
 const APPEARANCE_STORAGE_KEY = 'chatbot.appearance.preferences'
+const THINKING_STORAGE_KEY = 'chatbot.features.thinking'
 const THEME_OPTIONS: ThemeOption[] = ['graphite', 'terminal', 'solarized', 'quartz']
 
 const isThemeOption = (value: unknown): value is ThemeOption => THEME_OPTIONS.includes(value as ThemeOption)
@@ -59,6 +60,20 @@ const persistAppearance = (prefs: AppearancePreferences) => {
   }
 }
 
+const readThinkingPreference = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false
+  }
+  const stored = window.localStorage.getItem(THINKING_STORAGE_KEY)
+  return stored === 'true'
+}
+
+const persistThinkingPreference = (enabled: boolean) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(THINKING_STORAGE_KEY, String(enabled))
+  }
+}
+
 const applyAppearance = (prefs: AppearancePreferences) => {
   if (typeof document === 'undefined') {
     return
@@ -71,6 +86,7 @@ type ConfigState = {
   config?: ConfigRead
   theme: ThemeOption
   appearance: AppearancePreferences
+  thinkingEnabled: boolean
   status: 'idle' | 'loading' | 'error'
   error?: string
   hasLoaded: boolean
@@ -79,6 +95,7 @@ type ConfigState = {
   updateOllamaBaseUrl: (url: string) => Promise<void>
   updateGenerationDefaults: (defaults: GenerationDefaults) => Promise<void>
   updateAppearance: (prefs: Partial<AppearancePreferences>) => void
+  setThinkingEnabled: (enabled: boolean) => void
   resetError: () => void
 }
 
@@ -86,6 +103,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   config: undefined,
   theme: readStoredTheme(),
   appearance: readAppearance(),
+  thinkingEnabled: readThinkingPreference(),
   status: 'idle',
   error: undefined,
   hasLoaded: false,
@@ -154,6 +172,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ appearance: next })
     persistAppearance(next)
     applyAppearance(next)
+  },
+  setThinkingEnabled(enabled) {
+    set({ thinkingEnabled: enabled })
+    persistThinkingPreference(enabled)
   },
   resetError() {
     if (get().error) {

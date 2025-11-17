@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, type ChatRequest, type ChatStreamEvent, type MessageRead } from '@/api/client'
 import { useSessionsStore } from '@/stores/sessions'
+import { useConfigStore } from '@/stores/config'
 
 const MESSAGE_LIMIT = 200
 
@@ -15,6 +16,7 @@ export type ChatSendOptions = {
 export type StreamingState = {
   active: boolean
   content: string
+  thinking?: string
   status?: string
   startedAt?: number
   promptTokens?: number | null
@@ -27,13 +29,14 @@ export function useChatSession(sessionId?: number) {
   const [messages, setMessages] = useState<MessageRead[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState<string | undefined>()
-  const [stream, setStream] = useState<StreamingState>({ active: false, content: '' })
+  const [stream, setStream] = useState<StreamingState>({ active: false, content: '', thinking: undefined })
   const [lastCompletion, setLastCompletion] = useState<StreamingState | undefined>()
   const abortController = useRef<AbortController | null>(null)
+  const thinkingEnabled = useConfigStore((state) => state.thinkingEnabled)
   const sessions = useSessionsStore((state) => state.sessions)
 
   const resetStream = useCallback(() => {
-    setStream({ active: false, content: '' })
+    setStream({ active: false, content: '', thinking: undefined })
     abortController.current = null
   }, [])
 
@@ -85,6 +88,7 @@ export function useChatSession(sessionId?: number) {
           ...prev,
           active: true,
           content: event.content,
+          thinking: event.thinking !== undefined ? event.thinking : prev.thinking,
         }))
         break
       case 'status':
@@ -143,6 +147,7 @@ export function useChatSession(sessionId?: number) {
       setStream({
         active: true,
         content: '',
+        thinking: undefined,
         status: 'Contacting model…',
         startedAt: Date.now(),
       })
@@ -170,6 +175,7 @@ export function useChatSession(sessionId?: number) {
         system_prompt: systemPrompt,
         options: overrides,
         regenerate_message_id: regenerateMessageId,
+        think: thinkingEnabled || undefined,
       }
       try {
         await api.chat.stream(payload, handleStreamEvent, controller.signal)
@@ -183,7 +189,7 @@ export function useChatSession(sessionId?: number) {
         resetStream()
       }
     },
-    [sessionId, stream.active, handleStreamEvent, loadMessages, resetStream],
+    [sessionId, stream.active, handleStreamEvent, loadMessages, resetStream, thinkingEnabled],
   )
 
   const cancelStream = useCallback(() => {

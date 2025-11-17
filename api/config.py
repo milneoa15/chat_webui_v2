@@ -22,6 +22,7 @@ class AppSettings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     backend_cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    backend_cors_origin_regex: str | None = r"http://(localhost|127\.0\.0\.1)(:\d+)?$"
 
     database_url: str | None = None
     database_path: Path = BASE_DIR / "chatbot.db"

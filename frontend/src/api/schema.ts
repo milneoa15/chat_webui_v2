@@ -359,6 +359,8 @@ export interface components {
             options?: components["schemas"]["PromptOptions"] | null;
             /** Regenerate Message Id */
             regenerate_message_id?: number | null;
+            /** Think */
+            think?: boolean | null;
         };
         /**
          * ConfigCreate

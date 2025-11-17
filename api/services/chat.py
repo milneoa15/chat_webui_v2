@@ -59,6 +59,7 @@ class ChatService:
         defaults = config.generation_defaults
         model_name = payload.model or defaults.model
         resolved_options = self._resolve_options(defaults, payload.options)
+        think_enabled = bool(payload.think)
 
         user_prompt = (payload.prompt or "").strip()
         should_persist_user = payload.regenerate_message_id is None
@@ -112,7 +113,9 @@ class ChatService:
                 message_id=user_message_id,
             )
 
-        ollama_payload = self._build_ollama_payload(model_name, prompt_text, resolved_options)
+        ollama_payload = self._build_ollama_payload(
+            model_name, prompt_text, resolved_options, think_enabled=think_enabled
+        )
         url = f"{str(config.ollama_base_url).rstrip('/')}/api/generate"
         logger.info(
             "chat.stream.start",
@@ -122,6 +125,7 @@ class ChatService:
         )
 
         assistant_buffer: list[str] = []
+        thinking_text: str | None = None
         prompt_tokens: int | None = None
         completion_tokens: int | None = None
         total_tokens: int | None = None
@@ -145,9 +149,19 @@ class ChatService:
                         continue
                     chunk = self._parse_chunk(line)
                     delta = chunk.get("response") or ""
+                    thinking_delta: str | None = None
+                    thinking_raw = chunk.get("thinking")
+                    if isinstance(thinking_raw, str) and thinking_raw:
+                        thinking_text = (thinking_text or "") + thinking_raw
+                        thinking_delta = thinking_text
                     if delta:
                         assistant_buffer.append(delta)
-                        yield ChatChunkEvent(delta=delta, content="".join(assistant_buffer))
+                    if delta or thinking_delta:
+                        yield ChatChunkEvent(
+                            delta=delta,
+                            content="".join(assistant_buffer),
+                            thinking=thinking_text,
+                        )
                         last_heartbeat = now
                     if chunk.get("done"):
                         prompt_tokens = chunk.get("prompt_eval_count")
@@ -164,6 +178,9 @@ class ChatService:
         if not assistant_text:
             yield ChatErrorEvent(message="No response received from Ollama")
             return
+
+        if thinking_text:
+            metrics = {**metrics, "thinking_text": thinking_text.strip()}
 
         assistant_payload = MessageCreate(
             role="assistant",
@@ -239,7 +256,7 @@ class ChatService:
 
     @staticmethod
     def _build_ollama_payload(
-        model_name: str, prompt_text: str, options: dict[str, Any]
+        model_name: str, prompt_text: str, options: dict[str, Any], *, think_enabled: bool = False
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": model_name,
@@ -250,6 +267,8 @@ class ChatService:
                 "top_p": options.get("top_p"),
             },
         }
+        if think_enabled:
+            payload["think"] = True
         if options.get("top_k") is not None:
             payload["options"]["top_k"] = options["top_k"]
         if options.get("repeat_penalty") is not None:

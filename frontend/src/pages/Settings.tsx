@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type SubmitHandler, type Resolver } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import clsx from 'clsx'
@@ -24,11 +24,25 @@ const generationSchema = z.object({
 type GenerationFormValues = z.infer<typeof generationSchema>
 
 export function SettingsPage() {
-  const { config, updateOllamaBaseUrl, updateGenerationDefaults, theme, updateTheme, error, resetError, appearance, updateAppearance, loadConfig } =
+  const {
+    config,
+    updateOllamaBaseUrl,
+    updateGenerationDefaults,
+    theme,
+    updateTheme,
+    error,
+    resetError,
+    appearance,
+    updateAppearance,
+    loadConfig,
+    thinkingEnabled,
+    setThinkingEnabled,
+  } =
     useConfigStore()
   const [activeTab, setActiveTab] = useState<'general' | 'generation' | 'appearance' | 'advanced'>('general')
   const [testStatus, setTestStatus] = useState<string | undefined>()
   const [feedback, setFeedback] = useState<string | undefined>()
+  const generationDefaults = config?.generation_defaults
 
   const generalForm = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
@@ -36,16 +50,16 @@ export function SettingsPage() {
   })
 
   const generationForm = useForm<GenerationFormValues>({
-    resolver: zodResolver(generationSchema),
+    resolver: zodResolver(generationSchema) as Resolver<GenerationFormValues>,
     defaultValues: {
-      model: config?.generation_defaults.model ?? '',
-      temperature: config?.generation_defaults.temperature ?? 0.7,
-      top_p: config?.generation_defaults.top_p ?? 0.9,
-      top_k: config?.generation_defaults.top_k?.toString() ?? '',
-      repeat_penalty: config?.generation_defaults.repeat_penalty?.toString() ?? '',
-      context_window: config?.generation_defaults.context_window?.toString() ?? '',
-      max_tokens: config?.generation_defaults.max_tokens?.toString() ?? '',
-      stop: (config?.generation_defaults.stop ?? []).join('\n'),
+      model: generationDefaults?.model ?? '',
+      temperature: generationDefaults?.temperature ?? 0.7,
+      top_p: generationDefaults?.top_p ?? 0.9,
+      top_k: generationDefaults?.top_k?.toString() ?? '',
+      repeat_penalty: generationDefaults?.repeat_penalty?.toString() ?? '',
+      context_window: generationDefaults?.context_window?.toString() ?? '',
+      max_tokens: generationDefaults?.max_tokens?.toString() ?? '',
+      stop: (generationDefaults?.stop ?? []).join('\n'),
     },
   })
 
@@ -54,7 +68,7 @@ export function SettingsPage() {
   }, [config?.ollama_base_url, generalForm])
 
   useEffect(() => {
-    const defaults = config?.generation_defaults
+    const defaults = generationDefaults
     if (!defaults) return
     generationForm.reset({
       model: defaults.model,
@@ -66,7 +80,7 @@ export function SettingsPage() {
       max_tokens: defaults.max_tokens?.toString() ?? '',
       stop: (defaults.stop ?? []).join('\n'),
     })
-  }, [config?.generation_defaults, generationForm])
+  }, [generationDefaults, generationForm])
 
   const handleGeneralSubmit = async (values: z.infer<typeof generalSchema>) => {
     await updateOllamaBaseUrl(values.endpoint)
@@ -75,7 +89,7 @@ export function SettingsPage() {
 
   const endpointField = generalForm.register('endpoint')
 
-  const handleGenerationSubmit = async (values: GenerationFormValues) => {
+  const handleGenerationSubmit: SubmitHandler<GenerationFormValues> = async (values) => {
     const toNumber = (value?: string) => {
       if (!value) return undefined
       const parsed = Number(value)
@@ -123,19 +137,19 @@ export function SettingsPage() {
   const appearanceSummary = useMemo(() => `${Math.round(appearance.fontScale * 100)}% font scale · ${appearance.density}`, [appearance.fontScale, appearance.density])
 
   return (
-    <section className="space-y-6 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6">
-      <header className="border-b border-[color:var(--border-strong)] pb-4">
-        <h2 className="text-2xl font-semibold text-[color:var(--text-primary)]">Workspace settings</h2>
+    <section className="flex flex-col gap-6 text-sm text-[color:var(--text-primary)]">
+      <header className="border-b border-[color:var(--border-strong)]/60 pb-4">
+        <h2 className="text-2xl font-semibold text-[color:var(--accent-primary)]">Workspace settings</h2>
         <p className="text-sm text-[color:var(--text-muted)]">Configure Ollama, defaults, and the interface theme.</p>
       </header>
 
-      <nav className="flex flex-wrap gap-3">
+      <nav className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.35em] text-[color:var(--text-muted)]">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             className={clsx(
-              'rounded-full border px-4 py-2 text-sm font-semibold transition',
-              activeTab === tab.id ? 'border-[color:var(--accent-primary)]' : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
+              'border border-[color:var(--border-strong)] px-3 py-2 transition hover:text-[color:var(--accent-primary)]',
+              activeTab === tab.id && 'text-[color:var(--accent-primary)]',
             )}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
           >
@@ -144,14 +158,14 @@ export function SettingsPage() {
         ))}
       </nav>
 
-      {feedback && <p className="rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-4 py-2 text-sm text-[color:var(--text-muted)]">{feedback}</p>}
+      {feedback && <p className="border border-[color:var(--border-strong)]/60 bg-[color:var(--surface-panel)]/40 px-4 py-2 text-xs text-[color:var(--text-muted)]">{feedback}</p>}
 
       {activeTab === 'general' && (
         <form className="space-y-4" onSubmit={generalForm.handleSubmit(handleGeneralSubmit)}>
           <label className="flex flex-col gap-2 text-sm text-[color:var(--text-primary)]">
             Ollama base URL
             <input
-              className="rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2 text-base text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--accent-primary)]"
+              className="border border-[color:var(--border-strong)] bg-transparent px-3 py-2 text-base text-[color:var(--text-primary)] transition focus:border-[color:var(--accent-primary)]"
               placeholder="http://localhost:11434"
               {...endpointField}
               onChange={(event) => {
@@ -178,35 +192,35 @@ export function SettingsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm text-[color:var(--text-primary)]">
               Default model
-              <input className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('model')} />
+              <input className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('model')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Temperature
-              <input type="number" step="0.05" min={0} max={2} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('temperature')} />
+              <input type="number" step="0.05" min={0} max={2} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('temperature')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Top P
-              <input type="number" step="0.05" min={0} max={1} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('top_p')} />
+              <input type="number" step="0.05" min={0} max={1} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('top_p')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Top K
-              <input type="number" min={1} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('top_k')} />
+              <input type="number" min={1} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('top_k')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Repeat penalty
-              <input type="number" min={0} step={0.1} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('repeat_penalty')} />
+              <input type="number" min={0} step={0.1} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('repeat_penalty')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Context window
-              <input type="number" min={256} step={256} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('context_window')} />
+              <input type="number" min={256} step={256} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('context_window')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Max tokens
-              <input type="number" min={1} className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" {...generationForm.register('max_tokens')} />
+              <input type="number" min={1} className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" {...generationForm.register('max_tokens')} />
             </label>
             <label className="text-sm text-[color:var(--text-primary)]">
               Stop sequences
-              <textarea className="mt-2 w-full rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-3 py-2" rows={3} placeholder="One per line" {...generationForm.register('stop')} />
+              <textarea className="mt-2 w-full border border-[color:var(--border-strong)] bg-transparent px-3 py-2" rows={3} placeholder="One per line" {...generationForm.register('stop')} />
             </label>
           </div>
           <button type="submit" className="rounded-full bg-[color:var(--accent-primary)] px-4 py-2 text-sm font-semibold text-black">
@@ -225,7 +239,7 @@ export function SettingsPage() {
                 onClick={() => handleThemeSelect(presetKey)}
                 className={clsx(
                   'rounded-2xl border px-4 py-3 text-left transition',
-                  theme === presetKey ? 'border-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]' : 'border-[color:var(--border-strong)] bg-[color:var(--surface-muted)]',
+                  theme === presetKey ? 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]' : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
                 )}
               >
                 <p className="text-sm font-semibold text-[color:var(--text-primary)]">{themePresets[presetKey].label}</p>
@@ -267,6 +281,20 @@ export function SettingsPage() {
 
       {activeTab === 'advanced' && (
         <div className="space-y-4">
+          <label className="flex items-start gap-3 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)]/40 px-4 py-3">
+            <input
+              type="checkbox"
+              className="mt-1 size-4 accent-[color:var(--accent-primary)]"
+              checked={thinkingEnabled}
+              onChange={(event) => setThinkingEnabled(event.target.checked)}
+            />
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-[color:var(--text-primary)]">Show reasoning traces (if model supports thinking)</span>
+              <p className="text-xs text-[color:var(--text-muted)]">
+                When enabled, thinking models emit their reasoning separately. The assistant transcript reveals this text by default and streams it live.
+              </p>
+            </div>
+          </label>
           <p className="text-sm text-[color:var(--text-muted)]">Streaming heartbeat is fixed at 8 seconds. Prompt history is capped at 200 messages per session.</p>
           <button
             type="button"

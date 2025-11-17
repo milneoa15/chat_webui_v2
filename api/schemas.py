@@ -126,6 +126,7 @@ class ChatRequest(BaseModel):
     system_prompt: str | None = None
     options: PromptOptions | None = None
     regenerate_message_id: int | None = Field(default=None, ge=1)
+    think: bool | None = Field(default=None)
 
 
 class ChatChunkEvent(BaseModel):
@@ -134,6 +135,7 @@ class ChatChunkEvent(BaseModel):
     type: Literal["chunk"] = "chunk"
     delta: str
     content: str
+    thinking: str | None = None
 
 
 class ChatCompletionEvent(BaseModel):

@@ -1,31 +1,36 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Code, FileText, MessageSquare } from 'lucide-react'
 import type { MessageRead } from '@/api/client'
 import { ChatMessage } from '@/components/ChatMessage'
 
 export type ChatTranscriptProps = {
   messages: MessageRead[]
   streamContent?: string
+  streamThinking?: string
   streamActive: boolean
   streamStatus?: string
   onCopy: (message: MessageRead) => void
   onDelete: (message: MessageRead) => void
-  onRegenerate: (message: MessageRead) => void
-  onShare: (message: MessageRead) => void
-  onTogglePin: (message: MessageRead) => void
+  headerControls?: ReactNode
+  showThinking?: boolean
 }
+
+const COLLAPSE_THRESHOLD = 800
 
 export function ChatTranscript({
   messages,
   streamContent,
+  streamThinking,
   streamActive,
   streamStatus,
   onCopy,
   onDelete,
-  onRegenerate,
-  onShare,
-  onTogglePin,
+  headerControls,
+  showThinking = false,
 }: ChatTranscriptProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
+  const [collapsedMessages, setCollapsedMessages] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     const element = containerRef.current
@@ -33,31 +38,109 @@ export function ChatTranscript({
     element.scrollTop = element.scrollHeight
   }, [messages, streamContent])
 
+  useEffect(() => {
+    setCollapsedMessages((prev) => {
+      const next: Record<number, boolean> = {}
+      const lastIndex = messages.length - 1
+      messages.forEach((message, index) => {
+        if (message.content.length <= COLLAPSE_THRESHOLD) {
+          if (prev[message.id] !== undefined) {
+            next[message.id] = prev[message.id]
+          }
+          return
+        }
+        if (index < lastIndex) {
+          next[message.id] = true
+        } else {
+          next[message.id] = prev[message.id] ?? false
+        }
+      })
+      return next
+    })
+  }, [messages])
+
+  const handleToggleCollapse = (messageId: number) => {
+    setCollapsedMessages((prev) => ({
+      ...prev,
+      [messageId]: !prev[messageId],
+    }))
+  }
+
+  const formatToggle = useMemo(
+    () => (
+      <div className="flex gap-1">
+        <button
+          className={`flex size-7 items-center justify-center ${formatMode === 'markdown' ? 'text-[color:var(--accent-primary)]' : ''}`}
+          onClick={() => setFormatMode('markdown')}
+          title="Formatted view"
+        >
+          <FileText className="size-4" aria-hidden />
+          <span className="sr-only">Formatted view</span>
+        </button>
+        <button
+          className={`flex size-7 items-center justify-center ${formatMode === 'raw' ? 'text-[color:var(--accent-primary)]' : ''}`}
+          onClick={() => setFormatMode('raw')}
+          title="Raw text view"
+        >
+          <Code className="size-4" aria-hidden />
+          <span className="sr-only">Raw text view</span>
+        </button>
+      </div>
+    ),
+    [formatMode],
+  )
+
   return (
-    <div ref={containerRef} className="flex h-full flex-col gap-4 overflow-y-auto px-4 py-4">
-      {messages.map((message) => (
-        <ChatMessage
-          key={message.id}
-          message={message}
-          onCopy={onCopy}
-          onDelete={onDelete}
-          onRegenerate={onRegenerate}
-          onShare={onShare}
-          onTogglePin={onTogglePin}
-        />
-      ))}
-      {streamActive && (
-        <article className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-5">
-          <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--text-muted)]">Streaming response…</p>
-          <p className="mt-3 whitespace-pre-wrap text-[color:var(--text-primary)]">{streamContent}</p>
-          <p className="mt-2 text-xs text-[color:var(--text-muted)]">{streamStatus ?? 'Receiving tokens'}</p>
-        </article>
-      )}
-      {!messages.length && !streamActive && (
-        <div className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6 text-center text-sm text-[color:var(--text-muted)]">
-          Start the conversation by drafting a prompt below. Session metrics and history will appear here.
-        </div>
-      )}
+    <div className="flex flex-1 min-h-0 flex-col border border-[color:var(--border-strong)] border-t-0 lg:border-l-0">
+      <div className="flex items-center justify-between border-b border-[color:var(--border-strong)] px-2 py-1 text-[color:var(--text-muted)]">
+        {formatToggle}
+        {headerControls}
+      </div>
+      <div ref={containerRef} className="flex h-full flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
+        {messages.map((message, index) => {
+          const previous = index > 0 ? messages[index - 1] : undefined
+          const showDivider =
+            previous &&
+            ((previous.role === 'user' && message.role === 'assistant') || (previous.role === 'assistant' && message.role === 'user'))
+
+          return (
+            <Fragment key={message.id}>
+              {showDivider && <div className="border-t border-[color:var(--border-strong)]" aria-hidden="true" />}
+              <ChatMessage
+                message={message}
+                formatMode={formatMode}
+                collapsed={collapsedMessages[message.id] ?? false}
+                canCollapse={message.content.length > COLLAPSE_THRESHOLD}
+                onToggleCollapse={() => handleToggleCollapse(message.id)}
+                onCopy={onCopy}
+                onDelete={onDelete}
+              />
+            </Fragment>
+          )
+        })}
+        {streamActive && showThinking && streamThinking && (
+          <article className="border-l border-dashed border-[color:var(--accent-primary)]/60 px-3 py-2 text-xs text-[color:var(--accent-primary)]">
+            <p className="mb-1 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">Thinking…</p>
+            <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[color:var(--accent-primary)]">{streamThinking}</pre>
+          </article>
+        )}
+        {streamActive && (
+          <article className="border-l border-[color:var(--accent-primary)] px-3 py-2 text-sm text-[color:var(--accent-primary)]">
+            <p className="sr-only">{streamStatus ?? 'Streaming response'}</p>
+            {formatMode === 'markdown' ? (
+              <p className="whitespace-pre-wrap text-[color:var(--text-primary)]">{streamContent}</p>
+            ) : (
+              <pre className="whitespace-pre-wrap text-xs text-[color:var(--text-primary)]">{streamContent}</pre>
+            )}
+          </article>
+        )}
+        {!messages.length && !streamActive && (
+          <div className="flex flex-1 items-center justify-center border border-dashed border-[color:var(--border-strong)] px-3 py-4 text-center text-[color:var(--text-muted)]">
+            <MessageSquare className="size-5" aria-hidden />
+            <span className="sr-only">No messages yet</span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

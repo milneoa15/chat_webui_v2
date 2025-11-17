@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Brain, MessageSquare, PanelLeft, Plus } from 'lucide-react'
+import clsx from 'clsx'
 import type { MessageRead, SessionRead } from '@/api/client'
 import { ChatSidebar } from '@/components/ChatSidebar'
 import { ChatTranscript } from '@/components/ChatTranscript'
 import { ChatComposer } from '@/components/ChatComposer'
 import { ModelSelector } from '@/components/ModelSelector'
 import { useChatSession } from '@/hooks/useChatSession'
-import { useConfigStore } from '@/stores/config'
 import { useSessionsStore } from '@/stores/sessions'
+import type { ProtectedLayoutContext } from '@/components/ProtectedLayout'
+import { useConfigStore } from '@/stores/config'
 
 export function ChatPage() {
   const { sessionId } = useParams()
@@ -24,20 +27,24 @@ export function ChatPage() {
     renameSession,
     deleteSession,
     error: sessionError,
+    lastUpdated,
   } = useSessionsStore()
-  const config = useConfigStore((state) => state.config)
   const [renameTarget, setRenameTarget] = useState<SessionRead | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<SessionRead | null>(null)
-  const [bannerMessage, setBannerMessage] = useState<string | undefined>()
   const [sessionModels, setSessionModels] = useState<Record<number, string>>({})
-  const { messages, error, stream, sendPrompt, cancelStream, deleteMessage, togglePin, regenerate, session } = useChatSession(selectedSessionId)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { messages, error, stream, sendPrompt, cancelStream, deleteMessage, session } = useChatSession(selectedSessionId)
+  const outletContext = useOutletContext<ProtectedLayoutContext | null>()
+  const setHeaderActions = outletContext?.setHeaderActions
+  const thinkingEnabled = useConfigStore((state) => state.thinkingEnabled)
+  const setThinkingEnabled = useConfigStore((state) => state.setThinkingEnabled)
 
   useEffect(() => {
-    if (!sessions.length && status === 'idle') {
+    if (!lastUpdated && status === 'idle') {
       void refresh()
     }
-  }, [sessions.length, status, refresh])
+  }, [lastUpdated, status, refresh])
 
   useEffect(() => {
     if (sessionId) {
@@ -55,20 +62,14 @@ export function ChatPage() {
     }
   }, [selectedSessionId, sessions, navigate])
 
-  useEffect(() => {
-    if (!bannerMessage) return
-    const timer = window.setTimeout(() => setBannerMessage(undefined), 2400)
-    return () => window.clearTimeout(timer)
-  }, [bannerMessage])
-
-  const handleCreateSession = async () => {
+  const handleCreateSession = useCallback(async () => {
     try {
       const created = await createSession()
       navigate(`/chat/${created.id}`)
     } catch (error) {
       console.error('Failed to create session', error)
     }
-  }
+  }, [createSession, navigate])
 
   const handleSelectSession = (id: number) => {
     selectSession(id)
@@ -78,31 +79,11 @@ export function ChatPage() {
   const handleCopy = async (message: MessageRead) => {
     try {
       await navigator.clipboard.writeText(message.content)
-      setBannerMessage('Copied message to clipboard')
     } catch (error) {
       console.error('Clipboard copy failed', error)
     }
   }
 
-  const handleShare = async (message: MessageRead) => {
-    const payload = `${message.role.toUpperCase()} @ ${new Date(message.created_at).toLocaleString()}\n\n${message.content}`
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Chat excerpt', text: payload })
-        return
-      } catch (error) {
-        console.warn('Share aborted', error)
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(payload)
-      setBannerMessage('Copied sharable excerpt to clipboard')
-    } catch (error) {
-      console.error('Unable to share message', error)
-    }
-  }
-
-  const composerDefaultsKey = config?.generation_defaults ? JSON.stringify(config.generation_defaults) : 'no-defaults'
   const hasSessions = sessions.length > 0
   const showPlaceholder = !session
   const activeModel = session ? sessionModels[session.id] : undefined
@@ -120,9 +101,94 @@ export function ChatPage() {
     })
   }
 
+  const modelControls = session ? (
+    <ModelSelector
+      selectedModel={activeModel}
+      disabled={!session}
+      onSelect={(model) => {
+        if (session) {
+          persistModelSelection(session.id, model)
+        }
+      }}
+      onClear={() => {
+        if (session) {
+          persistModelSelection(session.id)
+        }
+      }}
+      variant="minimal"
+    />
+  ) : null
+
+  const reasoningToggle = (
+    <button
+      className={clsx(
+        'flex size-7 items-center justify-center border',
+        thinkingEnabled
+          ? 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]'
+          : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
+      )}
+      onClick={() => setThinkingEnabled(!thinkingEnabled)}
+      type="button"
+      title={thinkingEnabled ? 'Disable reasoning view' : 'Enable reasoning view'}
+    >
+      <span className="sr-only">Toggle reasoning</span>
+      <Brain className="size-4" aria-hidden />
+    </button>
+  )
+
+  const transcriptControls = (
+    <div className="flex items-center gap-2">
+      {modelControls}
+      {reasoningToggle}
+    </div>
+  )
+
+  useEffect(() => {
+    if (!setHeaderActions) {
+      return
+    }
+    if (!sidebarOpen) {
+      setHeaderActions(
+        <>
+          <button
+            className="flex size-7 items-center justify-center border border-[color:var(--accent-primary)] text-[color:var(--accent-primary)] transition hover:text-[color:var(--text-primary)]"
+            onClick={handleCreateSession}
+            title="New session"
+          >
+            <Plus className="size-4" aria-hidden />
+            <span className="sr-only">New session</span>
+          </button>
+          <button
+            className="flex size-7 items-center justify-center border border-[color:var(--border-strong)] text-[color:var(--text-muted)] transition hover:text-[color:var(--accent-primary)]"
+            onClick={() => setSidebarOpen(true)}
+            title="Expand sidebar"
+          >
+            <PanelLeft className="size-4" aria-hidden />
+            <span className="sr-only">Expand sidebar</span>
+          </button>
+        </>,
+      )
+    } else {
+      setHeaderActions(null)
+    }
+    return () => {
+      setHeaderActions(null)
+    }
+  }, [handleCreateSession, setHeaderActions, sidebarOpen])
+
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden lg:flex-row">
-      <div className="w-full shrink-0 lg:w-[320px]">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden text-sm lg:flex-row">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-10 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+      <div
+        className={clsx(
+          'fixed inset-y-0 left-0 z-20 w-full max-w-[260px] transform overflow-hidden bg-[color:var(--surface-base)]/95 lg:relative lg:z-0 lg:max-w-[260px] lg:flex-shrink-0 lg:transform-none',
+          sidebarOpen
+            ? 'translate-x-0 lg:w-[260px]'
+            : '-translate-x-full lg:w-0 lg:pointer-events-none',
+        )}
+      >
         <ChatSidebar
           sessions={sessions}
           status={status}
@@ -139,119 +205,66 @@ export function ChatPage() {
             setRenameValue(session.title)
           }}
           onDeleteRequest={(session) => setDeleteTarget(session)}
+          onCollapse={() => setSidebarOpen(false)}
         />
       </div>
 
-      <section className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)]">
-        {showPlaceholder ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center text-sm text-[color:var(--text-muted)]">
-            <p className="font-mono text-xs uppercase tracking-[0.45em]">{hasSessions ? 'Select a session' : 'No sessions yet'}</p>
-            <p className="text-lg font-semibold text-[color:var(--text-primary)]">
-              {hasSessions ? 'Use the left rail to choose a conversation.' : 'Create your first conversation to begin.'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <header className="border-b border-[color:var(--border-strong)] px-5 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.45em] text-[color:var(--text-muted)]">Active Session</p>
-                  <p className="text-xl font-semibold text-[color:var(--text-primary)]">{session.title}</p>
-                  <p className="text-xs text-[color:var(--text-muted)]">Updated {new Date(session.updated_at).toLocaleString()}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-[color:var(--text-muted)]">
-                  <button
-                    onClick={() => {
-                      void refresh()
-                    }}
-                    className="rounded-full border border-[color:var(--border-strong)] px-4 py-2"
-                  >
-                    Sync
-                  </button>
-                  <button className="rounded-full border border-[color:var(--border-strong)] px-4 py-2" onClick={() => setRenameTarget(session)}>
-                    Rename
-                  </button>
-                  <button className="rounded-full border border-red-400/40 px-4 py-2 text-red-200" onClick={() => setDeleteTarget(session)}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </header>
-
-            <div className="border-b border-[color:var(--border-strong)] px-5 py-3">
-              <ModelSelector
-                selectedModel={activeModel}
-                disabled={!session}
-                onSelect={(model) => {
-                  if (session) {
-                    persistModelSelection(session.id, model)
-                  }
-                }}
-                onClear={() => {
-                  if (session) {
-                    persistModelSelection(session.id)
-                  }
-                }}
-              />
+      <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-0 py-0 font-mono text-sm text-[color:var(--text-primary)] lg:border-l lg:border-[color:var(--border-strong)]">
+        <div className="flex flex-1 flex-col overflow-hidden min-h-0">
+          {showPlaceholder ? (
+            <div className="flex flex-1 items-center justify-center border border-dashed border-[color:var(--border-strong)] border-t-0 lg:border-l-0">
+              <MessageSquare className="size-6 text-[color:var(--text-muted)]" aria-hidden />
+              <span className="sr-only">{hasSessions ? 'Select a session to continue' : 'Create a session to begin'}</span>
             </div>
-
-            <div className="flex flex-1 flex-col gap-4 overflow-hidden px-5 py-4">
-              <div className="flex-1 overflow-hidden rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)]">
+          ) : (
+            <>
+              <div className="flex flex-1 flex-col overflow-hidden min-h-0">
                 <ChatTranscript
                   messages={messages}
                   streamContent={stream.content}
+                  streamThinking={stream.thinking}
                   streamActive={stream.active}
                   streamStatus={stream.status}
                   onCopy={handleCopy}
                   onDelete={(message) => {
                     void deleteMessage(message.id)
                   }}
-                  onRegenerate={(message) => {
-                    if (message.role === 'assistant') {
-                      void regenerate(message.id)
-                    }
-                  }}
-                  onShare={handleShare}
-                  onTogglePin={(message) => {
-                    void togglePin(message)
-                  }}
+                  headerControls={transcriptControls}
+                  showThinking={thinkingEnabled}
                 />
               </div>
-              {bannerMessage && (
-                <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">{bannerMessage}</p>
-              )}
-              <ChatComposer
-                key={composerDefaultsKey}
-                defaults={config?.generation_defaults}
-                model={activeModel}
-                disabled={composerDisabled}
-                isStreaming={stream.active}
-                statusMessage={stream.status}
-                error={error}
-                onSend={(options) => sendPrompt(options)}
-                onCancel={cancelStream}
-              />
-            </div>
-          </>
-        )}
+              <div className="shrink-0 border border-[color:var(--border-strong)] border-t-0 lg:border-l-0">
+                <ChatComposer
+                  model={activeModel}
+                  disabled={composerDisabled}
+                  isStreaming={stream.active}
+                  statusMessage={stream.status}
+                  error={error}
+                  onSend={(options) => sendPrompt(options)}
+                  onCancel={cancelStream}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </section>
 
       <Dialog.Root open={Boolean(renameTarget)} onOpenChange={(next) => !next && setRenameTarget(null)}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/70" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6">
-            <Dialog.Title className="text-xl font-semibold">Rename session</Dialog.Title>
+          <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6 text-sm">
+            <Dialog.Title className="text-xl font-semibold text-[color:var(--accent-primary)]">Rename session</Dialog.Title>
             <input
               className="mt-4 w-full rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-4 py-3 text-base"
               value={renameValue}
               onChange={(event) => setRenameValue(event.target.value)}
             />
             <div className="mt-6 flex justify-end gap-3">
-              <button className="rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-sm" onClick={() => setRenameTarget(null)}>
+              <button className="border border-[color:var(--border-strong)] px-4 py-2 text-sm" onClick={() => setRenameTarget(null)}>
                 Cancel
               </button>
               <button
-                className="rounded-full bg-[color:var(--accent-primary)] px-4 py-2 text-sm font-semibold text-black"
+                className="border border-[color:var(--accent-primary)] px-4 py-2 text-sm font-semibold text-[color:var(--accent-primary)]"
                 onClick={() => {
                   if (renameTarget && renameValue.trim()) {
                     void renameSession(renameTarget.id, renameValue.trim()).then(() => setRenameTarget(null))
@@ -268,17 +281,17 @@ export function ChatPage() {
       <Dialog.Root open={Boolean(deleteTarget)} onOpenChange={(next) => !next && setDeleteTarget(null)}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/70" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6">
+          <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6">
             <Dialog.Title className="text-xl font-semibold text-red-200">Delete session</Dialog.Title>
             <p className="mt-3 text-sm text-[color:var(--text-muted)]">
               This removes {deleteTarget?.title}. Messages, metrics, and streams cannot be recovered.
             </p>
             <div className="mt-6 flex justify-end gap-3">
-              <button className="rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-sm" onClick={() => setDeleteTarget(null)}>
+              <button className="border border-[color:var(--border-strong)] px-4 py-2 text-sm" onClick={() => setDeleteTarget(null)}>
                 Cancel
               </button>
               <button
-                className="rounded-full border border-red-400/40 px-4 py-2 text-sm font-semibold text-red-100"
+                className="border border-red-400/40 px-4 py-2 text-sm font-semibold text-red-100"
                 onClick={() => {
                   if (deleteTarget) {
                     void deleteSession(deleteTarget.id).then(() => setDeleteTarget(null))

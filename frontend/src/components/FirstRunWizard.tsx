@@ -56,7 +56,7 @@ export function FirstRunWizard() {
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6 shadow-2xl">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] p-6">
           <Dialog.Title className="text-2xl font-semibold text-[color:var(--text-primary)]">First-run setup</Dialog.Title>
           <Dialog.Description className="mt-2 text-sm text-[color:var(--text-muted)]">
             Point the UI at your local Ollama instance. We will test the connection before letting you continue.

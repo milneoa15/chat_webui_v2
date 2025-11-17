@@ -1,38 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #f4f5f8;
-  background-color: #050509;
+:root,
+:root[data-theme='terminal'] {
+  font-family: 'IBM Plex Mono', 'Share Tech Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  color: #dfffe3;
+  background-color: #010903;
   --font-scale: 1;
   --density-scale: 1;
-  --surface-base: #050509;
-  --surface-panel: #0f0f16;
-  --surface-muted: #141426;
-  --border-strong: #2a2a3a;
-  --text-primary: #f4f5f8;
-  --text-muted: #9ea1c5;
-  --accent-primary: #32e0c4;
-  --surface-warning: #402820;
-  --warning-text: #fbd4c7;
-  --offline-border: #8a4b3b;
-  --app-gradient: radial-gradient(circle at top, #151525, #050509 65%);
-}
-
-:root[data-theme='terminal'] {
   --surface-base: #010903;
-  --surface-panel: #021708;
-  --surface-muted: #06240c;
-  --border-strong: #0d3515;
-  --text-primary: #d5f7d8;
-  --text-muted: #89c294;
-  --accent-primary: #51ffa7;
+  --surface-panel: #09140c;
+  --surface-muted: #0c1f11;
+  --border-strong: #0f3d1a;
+  --text-primary: #dfffe3;
+  --text-muted: #7edd8e;
+  --accent-primary: #74ffb7;
   --surface-warning: #2b140f;
   --warning-text: #ffd9c6;
-  --offline-border: #7a3828;
-  --app-gradient: radial-gradient(circle at top, #07200c, #010903 70%);
+  --offline-border: #0f5b2c;
 }
 
 :root[data-theme='solarized'] {
@@ -67,11 +55,72 @@
   --density-scale: 0.9;
 }
 
+* {
+  border-radius: 0 !important;
+}
+
 body {
   margin: 0;
+  height: 100vh;
   min-height: 100vh;
   font-size: calc(16px * var(--font-scale));
   line-height: calc(1.5 * var(--density-scale));
-  background: var(--app-gradient);
+  background-color: var(--surface-base);
   color: var(--text-primary);
+  font-family: 'IBM Plex Mono', 'Share Tech Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+select option {
+  background-color: var(--surface-panel);
+  color: var(--text-primary);
+}
+
+textarea:focus,
+input:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.chat-composer .chat-composer-input:focus {
+  box-shadow: none;
+}
+
+::selection {
+  background: rgba(116, 255, 183, 0.2);
+  color: var(--accent-primary);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(116, 255, 183, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(116, 255, 183, 0.5);
 }

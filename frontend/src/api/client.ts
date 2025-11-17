@@ -26,15 +26,38 @@ export type MessageListResponse = components['schemas']['MessageListResponse']
 export type MessagePinRequest = components['schemas']['MessagePinRequest']
 export type MessageRegenerateResponse = components['schemas']['MessageRegenerateResponse']
 export type ChatRequest = components['schemas']['ChatRequest']
-export type ChatChunkEvent = components['schemas']['ChatChunkEvent']
-export type ChatCompletionEvent = components['schemas']['ChatCompletionEvent']
-export type ChatStatusEvent = components['schemas']['ChatStatusEvent']
-export type ChatHeartbeatEvent = components['schemas']['ChatHeartbeatEvent']
-export type ChatErrorEvent = components['schemas']['ChatErrorEvent']
 export type ModelActionResponse = components['schemas']['ModelActionResponse']
 export type ModelPullRequest = components['schemas']['ModelPullRequest']
 export type ModelNameRequest = components['schemas']['ModelNameRequest']
 export type VersionResponse = components['schemas']['VersionResponse']
+
+export type ChatChunkEvent = {
+  type: 'chunk'
+  content: string
+  thinking?: string
+}
+
+export type ChatCompletionEvent = {
+  type: 'complete'
+  prompt_tokens?: number | null
+  completion_tokens?: number | null
+  total_tokens?: number | null
+  metrics?: Record<string, unknown>
+}
+
+export type ChatStatusEvent = {
+  type: 'status'
+  message: string
+}
+
+export type ChatHeartbeatEvent = {
+  type: 'heartbeat'
+}
+
+export type ChatErrorEvent = {
+  type: 'error'
+  message: string
+}
 
 export type ChatStreamEvent = ChatChunkEvent | ChatCompletionEvent | ChatStatusEvent | ChatHeartbeatEvent | ChatErrorEvent
 

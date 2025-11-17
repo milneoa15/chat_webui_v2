@@ -1,23 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { CommandPalette } from '@/components/CommandPalette'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { FirstRunWizard } from '@/components/FirstRunWizard'
 import { api } from '@/api/client'
 import { useConfigStore } from '@/stores/config'
 import clsx from 'clsx'
+import { Boxes, MessageSquare, Settings2 } from 'lucide-react'
+
+export type ProtectedLayoutContext = {
+  health?: Awaited<ReturnType<typeof api.health>>
+  setHeaderActions: (actions: ReactNode | null) => void
+}
 
 const routes = [
-  { label: 'Chat', path: '/chat' },
-  { label: 'Models', path: '/models' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Chat', path: '/chat', icon: MessageSquare },
+  { label: 'Models', path: '/models', icon: Boxes },
+  { label: 'Settings', path: '/settings', icon: Settings2 },
 ]
 
 export function ProtectedLayout() {
-  const [paletteOpen, setPaletteOpen] = useState(false)
   const theme = useConfigStore((state) => state.theme)
   const loadConfig = useConfigStore((state) => state.loadConfig)
+  const [headerActions, setHeaderActions] = useState<ReactNode | null>(null)
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['health'],
     queryFn: () => api.health(),
@@ -35,14 +40,6 @@ export function ProtectedLayout() {
 
   const isHealthy = data?.status === 'ok' && !isError
 
-  const statusPill = useMemo(
-    () =>
-      isHealthy
-        ? { label: 'Backend online', className: 'bg-emerald-500/20 text-emerald-200' }
-        : { label: 'Backend offline', className: 'bg-amber-500/20 text-amber-100' },
-    [isHealthy],
-  )
-
   if (isPending && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[color:var(--surface-base)] text-[color:var(--text-muted)]">
@@ -55,56 +52,42 @@ export function ProtectedLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[color:var(--surface-base)] text-[color:var(--text-primary)]">
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    <div className="relative flex h-full min-h-0 flex-col bg-[color:var(--surface-base)] text-[color:var(--text-primary)]">
       <FirstRunWizard />
       <OfflineBanner visible={!isHealthy} onRetry={() => refetch()} />
-      <header className="flex flex-col gap-4 border-b border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.45em] text-[color:var(--text-muted)]">Chatbot Web UI v2</p>
-          <p className="text-2xl font-semibold text-[color:var(--text-primary)]">Terminal Console</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--text-muted)]">
-          <nav className="flex flex-wrap items-center gap-2 font-mono">
-            {routes.map((route) => (
-              <NavLink
-                key={route.path}
-                to={route.path}
-                className={({ isActive }) =>
-                  clsx(
-                    'rounded-md border px-3 py-1 transition',
-                    isActive
-                      ? 'border-[color:var(--accent-primary)] text-[color:var(--text-primary)]'
-                      : 'border-transparent hover:border-[color:var(--border-strong)]',
-                  )
-                }
-              >
-                {route.label}
-              </NavLink>
-            ))}
+      <header className="fixed top-0 left-0 right-0 z-30 flex h-9 items-center border-b border-[color:var(--border-strong)] bg-[color:var(--surface-panel)] px-1">
+        <div className="flex w-full items-center justify-between gap-1">
+          <div className="flex items-center gap-1 text-[color:var(--text-muted)]">{headerActions}</div>
+          <nav className="flex items-center gap-1">
+            {routes.map((route) => {
+              const Icon = route.icon
+              return (
+                <NavLink
+                  key={route.path}
+                  to={route.path}
+                  className={({ isActive }) =>
+                    clsx(
+                      'flex size-7 items-center justify-center border border-transparent text-[color:var(--text-muted)] transition hover:text-[color:var(--accent-primary)]',
+                      isActive && 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]',
+                    )
+                  }
+                >
+                  <Icon className="size-4" aria-hidden />
+                  <span className="sr-only">{route.label}</span>
+                </NavLink>
+              )
+            })}
           </nav>
-          <span className={clsx('inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px]', statusPill.className)}>
-            <span className={clsx('size-2 rounded-full', isHealthy ? 'bg-emerald-300' : 'bg-amber-300 animate-pulse')} />
-            {statusPill.label}
-          </span>
-          <button
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border-strong)] px-4 py-2 text-xs font-semibold tracking-[0.35em] text-[color:var(--text-primary)] transition hover:bg-[color:var(--surface-panel)]"
-            onClick={() => setPaletteOpen(true)}
-          >
-            ⌘K
-          </button>
         </div>
       </header>
-      <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 overflow-hidden px-4 py-4 lg:px-8 lg:py-6">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <main className="flex flex-1 min-h-0 flex-col overflow-hidden px-0 pb-0 pt-9 font-mono text-sm sm:px-0">
           {isHealthy ? (
-            <Outlet context={{ health: data }} />
+            <Outlet context={{ health: data, setHeaderActions }} />
           ) : (
-            <div className="h-full rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-muted)] p-8 text-center">
-              <p className="text-lg font-semibold">Waiting for backend connection...</p>
-              <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-                Start the FastAPI server on port 8000 and press retry to continue.
-              </p>
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-[color:var(--text-muted)]">
+              <p className="text-lg text-[color:var(--text-primary)]">Waiting for backend connection…</p>
+              <p>Start the FastAPI server on port 8000 and press retry to continue.</p>
             </div>
           )}
         </main>
