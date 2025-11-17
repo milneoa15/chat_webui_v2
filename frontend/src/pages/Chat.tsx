@@ -232,6 +232,7 @@ export function ChatPage() {
             <>
               <div className="flex flex-1 flex-col overflow-hidden min-h-0">
                 <ChatTranscript
+                  sessionId={session?.id}
                   messages={messages}
                   streamContent={stream.content}
                   streamThinking={stream.thinking}

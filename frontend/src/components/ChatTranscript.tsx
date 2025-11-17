@@ -7,6 +7,7 @@ import type { MessageRead } from '@/api/client'
 import { ChatMessage } from '@/components/ChatMessage'
 
 export type ChatTranscriptProps = {
+  sessionId?: number
   messages: MessageRead[]
   streamContent?: string
   streamThinking?: string
@@ -21,6 +22,7 @@ export type ChatTranscriptProps = {
 const COLLAPSE_THRESHOLD = 800
 
 export function ChatTranscript({
+  sessionId,
   messages,
   streamContent,
   streamThinking,
@@ -30,23 +32,39 @@ export function ChatTranscript({
   onDelete,
   headerControls,
   showThinking = false,
-}: ChatTranscriptProps) {
+  }: ChatTranscriptProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const thinkingRef = useRef<HTMLPreElement | null>(null)
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true)
+  const lastScrollTopRef = useRef(0)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     const element = containerRef.current
     if (!element) return
-    element.scrollTop = element.scrollHeight
-  }, [messages, streamContent, streamThinking])
+    requestAnimationFrame(() => {
+      element.scrollTop = element.scrollHeight
+      lastScrollTopRef.current = element.scrollTop
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!autoScrollEnabled) return
+    scrollToBottom()
+  }, [messages, streamContent, streamThinking, autoScrollEnabled, scrollToBottom])
+
+  useEffect(() => {
+    if (!streamActive && sessionId === undefined) return
+    setAutoScrollEnabled(true)
+    scrollToBottom()
+  }, [sessionId, streamActive, scrollToBottom])
 
   useEffect(() => {
     const element = thinkingRef.current
-    if (!element) return
+    if (!element || !autoScrollEnabled) return
     element.scrollTop = element.scrollHeight
-  }, [streamThinking])
+  }, [streamThinking, autoScrollEnabled])
 
   const collapseDefaults = useMemo(() => {
     const next: Record<number, boolean> = {}
@@ -109,7 +127,24 @@ export function ChatTranscript({
         {formatToggle}
         {headerControls}
       </div>
-      <div ref={containerRef} className="flex h-full flex-1 flex-col gap-4 overflow-y-auto px-0 py-4">
+      <div
+        ref={containerRef}
+        className="flex h-full flex-1 flex-col gap-4 overflow-y-auto px-0 py-4"
+        onScroll={(event) => {
+          const element = event.currentTarget
+          const isUserScroll = event.isTrusted
+          const previousTop = lastScrollTopRef.current
+          lastScrollTopRef.current = element.scrollTop
+
+          const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight
+          const scrolledUp = isUserScroll && element.scrollTop < previousTop - 1
+          if (scrolledUp) {
+            setAutoScrollEnabled(false)
+          } else if (distanceFromBottom <= 16) {
+            setAutoScrollEnabled(true)
+          }
+        }}
+      >
         {messages.map((message, index) => {
           const previous = index > 0 ? messages[index - 1] : undefined
           const showDivider =
