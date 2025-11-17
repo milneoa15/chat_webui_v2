@@ -37,6 +37,7 @@ export function ChatTranscript({
   const thinkingRef = useRef<HTMLPreElement | null>(null)
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true)
   const lastScrollTopRef = useRef(0)
+  const thinkingScrollTopRef = useRef(0)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
 
@@ -173,6 +174,20 @@ export function ChatTranscript({
             <pre
               ref={thinkingRef}
               className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[color:var(--accent-primary)]"
+              onScroll={(event) => {
+                const element = event.currentTarget
+                const isUserScroll = event.isTrusted
+                const previousTop = thinkingScrollTopRef.current
+                thinkingScrollTopRef.current = element.scrollTop
+
+                const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight
+                const scrolledUp = isUserScroll && element.scrollTop < previousTop - 1
+                if (scrolledUp) {
+                  setAutoScrollEnabled(false)
+                } else if (distanceFromBottom <= 16) {
+                  setAutoScrollEnabled(true)
+                }
+              }}
             >
               {streamThinking}
             </pre>
