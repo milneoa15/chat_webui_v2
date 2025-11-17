@@ -58,8 +58,11 @@ export function ChatTranscript({
 
   useEffect(() => {
     if (!streamActive && sessionId === undefined) return
-    setAutoScrollEnabled(true)
-    scrollToBottom()
+    const timer = window.setTimeout(() => {
+      setAutoScrollEnabled(true)
+      scrollToBottom()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [sessionId, streamActive, scrollToBottom])
 
   useEffect(() => {
@@ -71,7 +74,10 @@ export function ChatTranscript({
 
   useEffect(() => {
     if (!streamActive && sessionId === undefined) return
-    setThinkingAutoScrollEnabled(true)
+    const timer = window.setTimeout(() => {
+      setThinkingAutoScrollEnabled(true)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [sessionId, streamActive])
 
   const collapseDefaults = useMemo(() => {

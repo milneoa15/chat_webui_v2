@@ -7,7 +7,7 @@ describe('ChatComposer', () => {
     const onSend = vi.fn().mockResolvedValue(undefined)
     render(<ChatComposer model="llama3" isStreaming={false} disabled={false} onSend={onSend} onCancel={vi.fn()} />)
 
-    const textarea = screen.getByPlaceholderText(/type a prompt/i)
+    const textarea = screen.getByPlaceholderText(/^>$/)
     fireEvent.change(textarea, { target: { value: 'Hello assistant' } })
     fireEvent.keyDown(textarea, { key: 'Enter' })
 
