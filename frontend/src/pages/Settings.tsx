@@ -281,7 +281,10 @@ export function SettingsPage() {
 
       {activeTab === 'advanced' && (
         <div className="space-y-4">
-          <label className="flex items-start gap-3 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)]/40 px-4 py-3">
+          <label
+            className="flex items-start gap-3 rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-panel)]/40 px-4 py-3"
+            aria-label="Toggle reasoning traces preference"
+          >
             <input
               type="checkbox"
               className="mt-1 size-4 accent-[color:var(--accent-primary)]"

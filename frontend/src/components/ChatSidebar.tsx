@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MessageSquare, MoreHorizontal, PanelLeftClose, Plus, RefreshCw, Search, CircleDot } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
@@ -33,6 +33,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -53,6 +54,12 @@ export function ChatSidebar({
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [sessions, selectedSessionId, onSelect])
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus()
+    }
+  }, [searchOpen])
 
   const filteredSessions = useMemo(() => {
     if (!query.trim()) return sessions
@@ -101,11 +108,11 @@ export function ChatSidebar({
       {searchOpen && (
         <div className="border-b border-[color:var(--border-strong)] pb-1">
           <input
+            ref={searchInputRef}
             className="w-full border-none bg-transparent text-sm text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)]"
             placeholder="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            autoFocus
           />
         </div>
       )}

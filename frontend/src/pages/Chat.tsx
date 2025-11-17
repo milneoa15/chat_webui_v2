@@ -179,7 +179,19 @@ export function ChatPage() {
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden text-sm lg:flex-row">
       {sidebarOpen && (
-        <div className="fixed inset-0 z-10 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-10 bg-black/70 backdrop-blur-sm lg:hidden"
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSidebarOpen(false)
+            }
+          }}
+        />
       )}
       <div
         className={clsx(

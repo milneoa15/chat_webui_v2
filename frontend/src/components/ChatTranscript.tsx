@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react'
 import { Code, FileText, MessageSquare } from 'lucide-react'
 import type { MessageRead } from '@/api/client'
 import { ChatMessage } from '@/components/ChatMessage'
@@ -30,7 +30,7 @@ export function ChatTranscript({
 }: ChatTranscriptProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
-  const [collapsedMessages, setCollapsedMessages] = useState<Record<number, boolean>>({})
+  const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     const element = containerRef.current
@@ -38,33 +38,36 @@ export function ChatTranscript({
     element.scrollTop = element.scrollHeight
   }, [messages, streamContent])
 
-  useEffect(() => {
-    setCollapsedMessages((prev) => {
-      const next: Record<number, boolean> = {}
-      const lastIndex = messages.length - 1
-      messages.forEach((message, index) => {
-        if (message.content.length <= COLLAPSE_THRESHOLD) {
-          if (prev[message.id] !== undefined) {
-            next[message.id] = prev[message.id]
-          }
-          return
-        }
-        if (index < lastIndex) {
-          next[message.id] = true
-        } else {
-          next[message.id] = prev[message.id] ?? false
-        }
-      })
-      return next
+  const collapseDefaults = useMemo(() => {
+    const next: Record<number, boolean> = {}
+    const lastIndex = messages.length - 1
+    messages.forEach((message, index) => {
+      if (message.content.length <= COLLAPSE_THRESHOLD) {
+        return
+      }
+      if (index < lastIndex) {
+        next[message.id] = true
+      } else {
+        next[message.id] = false
+      }
     })
+    return next
   }, [messages])
 
-  const handleToggleCollapse = (messageId: number) => {
-    setCollapsedMessages((prev) => ({
-      ...prev,
-      [messageId]: !prev[messageId],
-    }))
-  }
+  const handleToggleCollapse = useCallback(
+    (messageId: number) => {
+      setCollapsedOverrides((prev) => {
+        const current = prev[messageId] ?? collapseDefaults[messageId] ?? false
+        const nextValue = !current
+        const next = { ...prev, [messageId]: nextValue }
+        if (nextValue === (collapseDefaults[messageId] ?? false)) {
+          delete next[messageId]
+        }
+        return next
+      })
+    },
+    [collapseDefaults],
+  )
 
   const formatToggle = useMemo(
     () => (
@@ -102,6 +105,7 @@ export function ChatTranscript({
           const showDivider =
             previous &&
             ((previous.role === 'user' && message.role === 'assistant') || (previous.role === 'assistant' && message.role === 'user'))
+          const collapsedState = collapsedOverrides[message.id] ?? collapseDefaults[message.id] ?? false
 
           return (
             <Fragment key={message.id}>
@@ -109,7 +113,7 @@ export function ChatTranscript({
               <ChatMessage
                 message={message}
                 formatMode={formatMode}
-                collapsed={collapsedMessages[message.id] ?? false}
+                collapsed={collapsedState}
                 canCollapse={message.content.length > COLLAPSE_THRESHOLD}
                 onToggleCollapse={() => handleToggleCollapse(message.id)}
                 onCopy={onCopy}

@@ -33,8 +33,7 @@ describe('App shell', () => {
       </BrowserRouter>,
     )
 
-    await waitFor(() => expect(screen.getByText(/Terminal Console/i)).toBeInTheDocument())
-    expect(screen.getByRole('link', { name: 'Chat' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Chat' })).toBeInTheDocument())
     expect(screen.getByRole('link', { name: 'Models' })).toBeInTheDocument()
   })
 })

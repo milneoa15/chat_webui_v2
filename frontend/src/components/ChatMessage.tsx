@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -51,12 +51,6 @@ export const ChatMessage = memo(function ChatMessage({
     }
     return undefined
   }, [metrics])
-
-  useEffect(() => {
-    if (!showThinkingByDefault) {
-      setRevealThinking(false)
-    }
-  }, [showThinkingByDefault])
 
   const displayContent = useMemo(() => {
     if (!collapsed) return message.content
