@@ -168,7 +168,7 @@ export function ChatTranscript({
           )
         })}
         {streamActive && showThinking && streamThinking && (
-          <article className="border-l border-dashed border-[color:var(--accent-primary)]/60 px-3 py-2 text-xs text-[color:var(--accent-primary)]">
+          <article className="px-3 py-2 text-xs text-[color:var(--accent-primary)]">
             <p className="mb-1 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">Thinking…</p>
             <pre
               ref={thinkingRef}
@@ -179,7 +179,7 @@ export function ChatTranscript({
           </article>
         )}
         {streamActive && (
-          <article className="border-l border-[color:var(--accent-primary)] px-3 py-2 text-sm text-[color:var(--accent-primary)]">
+          <article className="px-3 py-2 text-sm text-[color:var(--accent-primary)]">
             <p className="sr-only">{streamStatus ?? 'Streaming response'}</p>
             {formatMode === 'markdown' ? (
               <div className="prose prose-invert max-w-none text-[color:var(--text-primary)]">
