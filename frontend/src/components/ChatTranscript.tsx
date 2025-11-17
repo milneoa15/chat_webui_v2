@@ -36,6 +36,7 @@ export function ChatTranscript({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const thinkingRef = useRef<HTMLPreElement | null>(null)
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true)
+  const [thinkingAutoScrollEnabled, setThinkingAutoScrollEnabled] = useState(true)
   const lastScrollTopRef = useRef(0)
   const thinkingScrollTopRef = useRef(0)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
@@ -63,9 +64,15 @@ export function ChatTranscript({
 
   useEffect(() => {
     const element = thinkingRef.current
-    if (!element || !autoScrollEnabled) return
+    if (!element || !thinkingAutoScrollEnabled) return
     element.scrollTop = element.scrollHeight
-  }, [streamThinking, autoScrollEnabled])
+    thinkingScrollTopRef.current = element.scrollTop
+  }, [streamThinking, thinkingAutoScrollEnabled])
+
+  useEffect(() => {
+    if (!streamActive && sessionId === undefined) return
+    setThinkingAutoScrollEnabled(true)
+  }, [sessionId, streamActive])
 
   const collapseDefaults = useMemo(() => {
     const next: Record<number, boolean> = {}
@@ -183,7 +190,9 @@ export function ChatTranscript({
                 const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight
                 const scrolledUp = isUserScroll && element.scrollTop < previousTop - 1
                 if (scrolledUp) {
-                  setAutoScrollEnabled(false)
+                  setThinkingAutoScrollEnabled(false)
+                } else if (distanceFromBottom <= 16) {
+                  setThinkingAutoScrollEnabled(true)
                 }
               }}
             >
