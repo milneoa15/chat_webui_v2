@@ -23,6 +23,7 @@ describe('App shell', () => {
 
   it('renders navigation links once health check succeeds', async () => {
     vi.spyOn(api, 'health').mockResolvedValue(buildHealthResponse())
+    window.localStorage.setItem('chatbot.setup.complete', '1')
     const queryClient = new QueryClient()
 
     render(

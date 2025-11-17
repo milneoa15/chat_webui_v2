@@ -58,7 +58,7 @@ export const ChatMessage = memo(function ChatMessage({
   }, [collapsed, message.content])
 
   return (
-    <article className={clsx('group border-l border-[color:var(--border-strong)] px-3 py-3', message.is_pinned && 'border-[color:var(--accent-primary)]')}>
+    <article className={clsx('group px-3 py-3', message.is_pinned && 'ring-1 ring-[color:var(--accent-primary)]')}>
       <header className="mb-2 flex flex-wrap items-center justify-between gap-3 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">
         <div className="flex items-center gap-2">
           <span className={clsx('font-semibold', roleMeta.accent)}>{roleMeta.label}</span>

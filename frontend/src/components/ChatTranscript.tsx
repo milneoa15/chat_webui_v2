@@ -1,4 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
 import { Code, FileText, MessageSquare } from 'lucide-react'
 import type { MessageRead } from '@/api/client'
 import { ChatMessage } from '@/components/ChatMessage'
@@ -29,6 +32,7 @@ export function ChatTranscript({
   showThinking = false,
 }: ChatTranscriptProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const thinkingRef = useRef<HTMLPreElement | null>(null)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
 
@@ -36,7 +40,13 @@ export function ChatTranscript({
     const element = containerRef.current
     if (!element) return
     element.scrollTop = element.scrollHeight
-  }, [messages, streamContent])
+  }, [messages, streamContent, streamThinking])
+
+  useEffect(() => {
+    const element = thinkingRef.current
+    if (!element) return
+    element.scrollTop = element.scrollHeight
+  }, [streamThinking])
 
   const collapseDefaults = useMemo(() => {
     const next: Record<number, boolean> = {}
@@ -95,11 +105,11 @@ export function ChatTranscript({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col border border-[color:var(--border-strong)] border-t-0 lg:border-l-0">
-      <div className="flex items-center justify-between border-b border-[color:var(--border-strong)] px-2 py-1 text-[color:var(--text-muted)]">
+      <div className="flex h-10 items-center justify-between border-b border-[color:var(--border-strong)] px-2 text-[color:var(--text-muted)]">
         {formatToggle}
         {headerControls}
       </div>
-      <div ref={containerRef} className="flex h-full flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
+      <div ref={containerRef} className="flex h-full flex-1 flex-col gap-4 overflow-y-auto px-0 py-4">
         {messages.map((message, index) => {
           const previous = index > 0 ? messages[index - 1] : undefined
           const showDivider =
@@ -125,14 +135,23 @@ export function ChatTranscript({
         {streamActive && showThinking && streamThinking && (
           <article className="border-l border-dashed border-[color:var(--accent-primary)]/60 px-3 py-2 text-xs text-[color:var(--accent-primary)]">
             <p className="mb-1 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">Thinking…</p>
-            <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[color:var(--accent-primary)]">{streamThinking}</pre>
+            <pre
+              ref={thinkingRef}
+              className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[color:var(--accent-primary)]"
+            >
+              {streamThinking}
+            </pre>
           </article>
         )}
         {streamActive && (
           <article className="border-l border-[color:var(--accent-primary)] px-3 py-2 text-sm text-[color:var(--accent-primary)]">
             <p className="sr-only">{streamStatus ?? 'Streaming response'}</p>
             {formatMode === 'markdown' ? (
-              <p className="whitespace-pre-wrap text-[color:var(--text-primary)]">{streamContent}</p>
+              <div className="prose prose-invert max-w-none text-[color:var(--text-primary)]">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                  {streamContent}
+                </ReactMarkdown>
+              </div>
             ) : (
               <pre className="whitespace-pre-wrap text-xs text-[color:var(--text-primary)]">{streamContent}</pre>
             )}

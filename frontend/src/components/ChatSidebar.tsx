@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MessageSquare, MoreHorizontal, PanelLeftClose, Plus, RefreshCw, Search, CircleDot } from 'lucide-react'
+import { MoreHorizontal, PanelLeftClose, Plus, RefreshCw, Search, CircleDot } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
 import type { SessionMetricsResponse, SessionRead } from '@/api/client'
@@ -68,20 +68,8 @@ export function ChatSidebar({
   }, [sessions, query])
 
   return (
-    <aside className="flex h-full flex-col gap-3 bg-transparent px-2 py-3 text-sm text-[color:var(--text-primary)]">
-      <div className="flex items-center justify-between border-b border-[color:var(--border-strong)] pb-1 text-[color:var(--accent-primary)]">
-        <MessageSquare className="size-4" aria-hidden />
-        {onCollapse && (
-          <button
-            className="inline-flex items-center justify-center text-[color:var(--text-muted)] transition hover:text-[color:var(--accent-primary)]"
-            onClick={onCollapse}
-          >
-            <PanelLeftClose className="size-4" />
-            <span className="sr-only">Collapse sessions</span>
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-2 text-xs">
+    <aside className="flex h-full flex-col gap-0 bg-transparent px-0 py-0 text-sm text-[color:var(--text-primary)]">
+      <div className="flex h-10 items-center gap-2 border-b border-[color:var(--border-strong)] px-2 text-xs">
         <button
           onClick={onCreate}
           className="flex size-7 items-center justify-center border border-[color:var(--accent-primary)] text-[color:var(--accent-primary)] hover:text-[color:var(--text-primary)]"
@@ -104,9 +92,19 @@ export function ChatSidebar({
           <Search className="size-4" aria-hidden />
           <span className="sr-only">Search sessions</span>
         </button>
+        {onCollapse && (
+          <button
+            className="ml-auto flex size-7 items-center justify-center border border-[color:var(--border-strong)] text-[color:var(--text-muted)] transition hover:text-[color:var(--accent-primary)]"
+            onClick={onCollapse}
+            title="Collapse sidebar"
+          >
+            <PanelLeftClose className="size-4" />
+            <span className="sr-only">Collapse sessions</span>
+          </button>
+        )}
       </div>
       {searchOpen && (
-        <div className="border-b border-[color:var(--border-strong)] pb-1">
+        <div className="border-b border-[color:var(--border-strong)] px-2 pb-1">
           <input
             ref={searchInputRef}
             className="w-full border-none bg-transparent text-xs text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)]"
@@ -116,7 +114,7 @@ export function ChatSidebar({
           />
         </div>
       )}
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto">
         {status === 'loading' && <p className="text-sm text-[color:var(--text-muted)]">Loading sessions…</p>}
         {error && <p className="bg-red-500/10 p-2 text-xs text-red-200">{error}</p>}
         {filteredSessions.map((session) => {
@@ -126,7 +124,7 @@ export function ChatSidebar({
             <div
               key={session.id}
               className={clsx(
-                'group border-b border-[color:var(--border-strong)] px-1 py-1 text-xs transition',
+                'group border-b border-[color:var(--border-strong)] px-2 py-1 text-xs transition',
                 selectedSessionId === session.id
                   ? 'border-l-2 border-l-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]/40 text-[color:var(--accent-primary)]'
                   : 'border-l-2 border-l-transparent text-[color:var(--text-primary)] hover:bg-[color:var(--surface-muted)]/10',
