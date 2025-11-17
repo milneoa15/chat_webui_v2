@@ -195,9 +195,9 @@ export function ChatPage() {
       )}
       <div
         className={clsx(
-          'fixed inset-y-0 left-0 z-20 w-full max-w-[260px] transform overflow-hidden bg-[color:var(--surface-base)]/95 lg:relative lg:z-0 lg:max-w-[260px] lg:flex-shrink-0 lg:transform-none',
+          'fixed inset-y-0 left-0 z-20 w-full max-w-[220px] transform overflow-hidden bg-[color:var(--surface-base)]/95 lg:relative lg:z-0 lg:max-w-[220px] lg:flex-shrink-0 lg:transform-none',
           sidebarOpen
-            ? 'translate-x-0 lg:w-[260px]'
+            ? 'translate-x-0 lg:w-[220px]'
             : '-translate-x-full lg:w-0 lg:pointer-events-none',
         )}
       >
