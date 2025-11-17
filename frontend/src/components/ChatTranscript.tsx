@@ -184,8 +184,6 @@ export function ChatTranscript({
                 const scrolledUp = isUserScroll && element.scrollTop < previousTop - 1
                 if (scrolledUp) {
                   setAutoScrollEnabled(false)
-                } else if (distanceFromBottom <= 16) {
-                  setAutoScrollEnabled(true)
                 }
               }}
             >
