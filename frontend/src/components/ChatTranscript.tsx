@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, useCallback, type React
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
-import { Code, FileText, MessageSquare } from 'lucide-react'
+import { Code, FileText } from 'lucide-react'
 import type { MessageRead } from '@/api/client'
 import { ChatMessage } from '@/components/ChatMessage'
 
@@ -38,6 +38,7 @@ export function ChatTranscript({
   const lastScrollTopRef = useRef(0)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
+  const lastMessage = messages[messages.length - 1]
 
   const scrollToBottom = useCallback(() => {
     const element = containerRef.current
@@ -163,6 +164,7 @@ export function ChatTranscript({
             </Fragment>
           )
         })}
+        {streamActive && lastMessage?.role === 'user' && <div className="border-t border-[color:var(--border-strong)]" aria-hidden="true" />}
         {streamActive && showThinking && streamThinking && (
           <article className="px-3 py-2 text-xs text-[color:var(--accent-primary)]">
             <p className="mb-1 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">Thinking…</p>
@@ -184,12 +186,6 @@ export function ChatTranscript({
               <pre className="whitespace-pre-wrap text-xs text-[color:var(--text-primary)]">{streamContent}</pre>
             )}
           </article>
-        )}
-        {!messages.length && !streamActive && (
-          <div className="flex flex-1 items-center justify-center border border-dashed border-[color:var(--border-strong)] px-3 py-4 text-center text-[color:var(--text-muted)]">
-            <MessageSquare className="size-5" aria-hidden />
-            <span className="sr-only">No messages yet</span>
-          </div>
         )}
       </div>
     </div>

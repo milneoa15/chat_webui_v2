@@ -62,6 +62,21 @@ export const ChatMessage = memo(function ChatMessage({
       <header className="mb-2 flex flex-wrap items-center justify-between gap-3 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">
         <div className="flex items-center gap-2">
           <span className={clsx('font-semibold', roleMeta.accent)}>{roleMeta.label}</span>
+          {thinkingText && showThinkingByDefault && (
+            <button
+              className={clsx(
+                'flex size-6 items-center justify-center border',
+                revealThinking
+                  ? 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]'
+                  : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
+              )}
+              onClick={() => setRevealThinking((value) => !value)}
+              title={revealThinking ? 'Hide reasoning' : 'Show reasoning'}
+            >
+              <Brain className="size-3" aria-hidden />
+              <span className="sr-only">{revealThinking ? 'Hide reasoning' : 'Show reasoning'}</span>
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <time className="text-[color:var(--text-muted)]">
@@ -77,6 +92,11 @@ export const ChatMessage = memo(function ChatMessage({
           </button>
         </div>
       </header>
+      {thinkingText && showThinkingByDefault && revealThinking && (
+        <pre className="mb-2 max-h-56 w-full overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words border-l border-[color:var(--accent-primary)]/60 px-2 py-1 text-xs text-[color:var(--accent-primary)]">
+          {thinkingText}
+        </pre>
+      )}
       <div className={clsx('relative text-[color:var(--text-primary)]', collapsed && 'max-h-40 overflow-hidden')}>
         {formatMode === 'markdown' ? (
           <div className="prose prose-invert max-w-none">
@@ -102,25 +122,7 @@ export const ChatMessage = memo(function ChatMessage({
             <span className="sr-only">{collapsed ? 'Expand message' : 'Collapse message'}</span>
           </button>
         )}
-        {thinkingText && showThinkingByDefault && (
-          <button
-            className={clsx(
-              'flex size-6 items-center justify-center border',
-              revealThinking ? 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]' : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
-            )}
-            onClick={() => setRevealThinking((value) => !value)}
-            title={revealThinking ? 'Hide reasoning' : 'Show reasoning'}
-          >
-            <Brain className="size-3" aria-hidden />
-            <span className="sr-only">{revealThinking ? 'Hide reasoning' : 'Show reasoning'}</span>
-          </button>
-        )}
       </footer>
-      {thinkingText && showThinkingByDefault && revealThinking && (
-        <pre className="mt-2 max-h-56 w-full overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words border-l border-[color:var(--accent-primary)]/60 px-2 py-1 text-xs text-[color:var(--accent-primary)]">
-          {thinkingText}
-        </pre>
-      )}
     </article>
   )
 })

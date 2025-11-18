@@ -87,7 +87,7 @@ export function useChatSession(sessionId?: number) {
         setStream((prev) => ({
           ...prev,
           active: true,
-          content: event.content,
+          content: event.content !== undefined ? event.content : prev.content,
           thinking: event.thinking !== undefined ? event.thinking : prev.thinking,
         }))
         break

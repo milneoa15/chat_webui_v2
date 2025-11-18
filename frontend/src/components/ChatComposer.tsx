@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import type { ChatSendOptions } from '@/hooks/useChatSession'
-import { AlertTriangle, Square, Waves } from 'lucide-react'
+import { AlertTriangle, Square } from 'lucide-react'
 
 export type ChatComposerProps = {
   model?: string
@@ -58,13 +58,8 @@ export function ChatComposer({ model, disabled, isStreaming, statusMessage, erro
         }}
         disabled={composerDisabled}
       />
-      <div className="absolute bottom-2 right-2 flex items-center gap-2">
-        {statusMessage && (
-          <span className="text-[color:var(--accent-primary)]" title={statusMessage}>
-            <Waves className="size-4" aria-hidden />
-            <span className="sr-only">{statusMessage}</span>
-          </span>
-        )}
+      <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-2">
+        {statusMessage && <span className="sr-only">{statusMessage}</span>}
         {error && (
           <span className="text-red-400" title={error}>
             <AlertTriangle className="size-4" aria-hidden />
