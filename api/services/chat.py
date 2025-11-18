@@ -134,45 +134,70 @@ class ChatService:
         last_heartbeat = started
 
         yield ChatStatusEvent(message="stream-started")
-        try:
-            async with self.http_client.stream("POST", url, json=ollama_payload) as response:
-                response.raise_for_status()
-                async for raw_line in response.aiter_lines():
-                    if raw_line is None:
-                        continue
-                    line = raw_line.strip()
-                    now = time.perf_counter()
-                    if not line:
-                        if now - last_heartbeat >= self.HEARTBEAT_SECONDS:
-                            yield ChatHeartbeatEvent(timestamp=datetime.now(timezone.utc))
+        while True:
+            try:
+                async with self.http_client.stream("POST", url, json=ollama_payload) as response:
+                    response.raise_for_status()
+                    async for raw_line in response.aiter_lines():
+                        if raw_line is None:
+                            continue
+                        line = raw_line.strip()
+                        now = time.perf_counter()
+                        if not line:
+                            if now - last_heartbeat >= self.HEARTBEAT_SECONDS:
+                                yield ChatHeartbeatEvent(timestamp=datetime.now(timezone.utc))
+                                last_heartbeat = now
+                            continue
+                        chunk = self._parse_chunk(line)
+                        delta = chunk.get("response") or ""
+                        thinking_delta: str | None = None
+                        thinking_raw = chunk.get("thinking")
+                        if isinstance(thinking_raw, str) and thinking_raw:
+                            thinking_text = (thinking_text or "") + thinking_raw
+                            thinking_delta = thinking_text
+                        if delta:
+                            assistant_buffer.append(delta)
+                        if delta or thinking_delta:
+                            yield ChatChunkEvent(
+                                delta=delta,
+                                content="".join(assistant_buffer),
+                                thinking=thinking_text,
+                            )
                             last_heartbeat = now
-                        continue
-                    chunk = self._parse_chunk(line)
-                    delta = chunk.get("response") or ""
-                    thinking_delta: str | None = None
-                    thinking_raw = chunk.get("thinking")
-                    if isinstance(thinking_raw, str) and thinking_raw:
-                        thinking_text = (thinking_text or "") + thinking_raw
-                        thinking_delta = thinking_text
-                    if delta:
-                        assistant_buffer.append(delta)
-                    if delta or thinking_delta:
-                        yield ChatChunkEvent(
-                            delta=delta,
-                            content="".join(assistant_buffer),
-                            thinking=thinking_text,
-                        )
-                        last_heartbeat = now
-                    if chunk.get("done"):
-                        prompt_tokens = chunk.get("prompt_eval_count")
-                        completion_tokens = chunk.get("eval_count")
-                        total_tokens = chunk.get("total_tokens")
-                        metrics = self._build_metrics(chunk, started)
-                        break
-        except httpx.HTTPError as exc:
-            logger.warning("chat.stream.http_error", error=str(exc))
-            yield ChatErrorEvent(message="Ollama request failed; check server logs")
-            return
+                        if chunk.get("done"):
+                            prompt_tokens = chunk.get("prompt_eval_count")
+                            completion_tokens = chunk.get("eval_count")
+                            total_tokens = chunk.get("total_tokens")
+                            metrics = self._build_metrics(chunk, started)
+                            break
+                    break
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code if exc.response else None
+                if think_enabled and status_code == status.HTTP_400_BAD_REQUEST:
+                    logger.info("chat.stream.retry_without_think", status=status_code)
+                    ollama_payload = self._build_ollama_payload(
+                        model_name, prompt_text, resolved_options, think_enabled=False
+                    )
+                    think_enabled = False
+                    assistant_buffer.clear()
+                    thinking_text = None
+                    started = time.perf_counter()
+                    last_heartbeat = started
+                    yield ChatStatusEvent(
+                        message="Reasoning not supported for this model; retrying without it."
+                    )
+                    continue
+                logger.warning(
+                    "chat.stream.http_status_error",
+                    error=str(exc),
+                    status=status_code,
+                )
+                yield ChatErrorEvent(message="Ollama request failed; check server logs")
+                return
+            except httpx.HTTPError as exc:
+                logger.warning("chat.stream.http_error", error=str(exc))
+                yield ChatErrorEvent(message="Ollama request failed; check server logs")
+                return
 
         assistant_text = "".join(assistant_buffer).strip()
         if not assistant_text:
