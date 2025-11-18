@@ -62,16 +62,6 @@ export const ChatMessage = memo(function ChatMessage({
       <header className="mb-2 flex flex-wrap items-center justify-between gap-3 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">
         <div className="flex items-center gap-2">
           <span className={clsx('font-semibold', roleMeta.accent)}>{roleMeta.label}</span>
-          {canCollapse && (
-            <button
-              className="flex size-5 items-center justify-center text-[color:var(--text-muted)] hover:text-[color:var(--accent-primary)]"
-              onClick={onToggleCollapse}
-              title={collapsed ? 'Expand message' : 'Collapse message'}
-            >
-              <ChevronDown className={clsx('size-3 transition', collapsed && 'rotate-180')} aria-hidden />
-              <span className="sr-only">{collapsed ? 'Expand message' : 'Collapse message'}</span>
-            </button>
-          )}
         </div>
         <div className="flex items-center gap-1">
           <time className="text-[color:var(--text-muted)]">
@@ -87,7 +77,7 @@ export const ChatMessage = memo(function ChatMessage({
           </button>
         </div>
       </header>
-      <div className="text-[color:var(--text-primary)]">
+      <div className={clsx('relative text-[color:var(--text-primary)]', collapsed && 'max-h-40 overflow-hidden')}>
         {formatMode === 'markdown' ? (
           <div className="prose prose-invert max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
@@ -102,10 +92,20 @@ export const ChatMessage = memo(function ChatMessage({
         {message.role === 'assistant' && typeof message.model === 'string' && message.model && <span>{message.model}</span>}
         {tokens > 0 && <span>{tokens} tok</span>}
         {typeof tokensPerSecond === 'number' && <span>{tokensPerSecond} tok/s</span>}
+        {canCollapse && (
+          <button
+            className="ml-auto flex size-6 items-center justify-center border border-[color:var(--border-strong)] text-[color:var(--text-muted)] hover:border-[color:var(--accent-primary)] hover:text-[color:var(--accent-primary)]"
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand message' : 'Collapse message'}
+          >
+            <ChevronDown className={clsx('size-3 transition', !collapsed ? 'rotate-180' : '')} aria-hidden />
+            <span className="sr-only">{collapsed ? 'Expand message' : 'Collapse message'}</span>
+          </button>
+        )}
         {thinkingText && showThinkingByDefault && (
           <button
             className={clsx(
-              'ml-auto flex size-6 items-center justify-center border',
+              'flex size-6 items-center justify-center border',
               revealThinking ? 'border-[color:var(--accent-primary)] text-[color:var(--accent-primary)]' : 'border-[color:var(--border-strong)] text-[color:var(--text-muted)]',
             )}
             onClick={() => setRevealThinking((value) => !value)}
