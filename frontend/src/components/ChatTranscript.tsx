@@ -34,11 +34,8 @@ export function ChatTranscript({
   showThinking = false,
   }: ChatTranscriptProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const thinkingRef = useRef<HTMLPreElement | null>(null)
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true)
-  const [thinkingAutoScrollEnabled, setThinkingAutoScrollEnabled] = useState(true)
   const lastScrollTopRef = useRef(0)
-  const thinkingScrollTopRef = useRef(0)
   const [formatMode, setFormatMode] = useState<'markdown' | 'raw'>('markdown')
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<number, boolean>>({})
 
@@ -64,21 +61,6 @@ export function ChatTranscript({
     }, 0)
     return () => window.clearTimeout(timer)
   }, [sessionId, streamActive, scrollToBottom])
-
-  useEffect(() => {
-    const element = thinkingRef.current
-    if (!element || !thinkingAutoScrollEnabled) return
-    element.scrollTop = element.scrollHeight
-    thinkingScrollTopRef.current = element.scrollTop
-  }, [streamThinking, thinkingAutoScrollEnabled])
-
-  useEffect(() => {
-    if (!streamActive && sessionId === undefined) return
-    const timer = window.setTimeout(() => {
-      setThinkingAutoScrollEnabled(true)
-    }, 0)
-    return () => window.clearTimeout(timer)
-  }, [sessionId, streamActive])
 
   const collapseDefaults = useMemo(() => {
     const next: Record<number, boolean> = {}
@@ -184,24 +166,7 @@ export function ChatTranscript({
         {streamActive && showThinking && streamThinking && (
           <article className="px-3 py-2 text-xs text-[color:var(--accent-primary)]">
             <p className="mb-1 text-[10px] uppercase tracking-[0.4em] text-[color:var(--text-muted)]">Thinking…</p>
-            <pre
-              ref={thinkingRef}
-              className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[color:var(--accent-primary)]"
-              onScroll={(event) => {
-                const element = event.currentTarget
-                const isUserScroll = event.isTrusted
-                const previousTop = thinkingScrollTopRef.current
-                thinkingScrollTopRef.current = element.scrollTop
-
-                const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight
-                const scrolledUp = isUserScroll && element.scrollTop < previousTop - 1
-                if (scrolledUp) {
-                  setThinkingAutoScrollEnabled(false)
-                } else if (distanceFromBottom <= 16) {
-                  setThinkingAutoScrollEnabled(true)
-                }
-              }}
-            >
+            <pre className="whitespace-pre-wrap break-words text-[color:var(--accent-primary)]">
               {streamThinking}
             </pre>
           </article>
