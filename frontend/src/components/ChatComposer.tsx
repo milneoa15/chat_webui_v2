@@ -39,10 +39,14 @@ export function ChatComposer({ model, disabled, isStreaming, statusMessage, erro
   }
 
   return (
-    <form className="chat-composer flex flex-col gap-2 border-t border-[color:var(--border-strong)] pt-1" onSubmit={handleSubmit}>
+    <form
+      className="chat-composer relative flex flex-col gap-0 border-t border-[color:var(--border-strong)] pt-0 pb-0"
+      onSubmit={handleSubmit}
+    >
       <TextareaAutosize
-        minRows={4}
-        className="chat-composer-input w-full resize-none bg-transparent px-3 py-2 text-base leading-relaxed text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-0"
+        minRows={1}
+        maxRows={8}
+        className="chat-composer-input w-full max-h-56 resize-none overflow-y-auto bg-transparent px-3 pr-28 py-2 text-base leading-relaxed text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-0"
         placeholder={composerDisabled ? 'Load a model to begin…' : '>'}
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
@@ -54,7 +58,7 @@ export function ChatComposer({ model, disabled, isStreaming, statusMessage, erro
         }}
         disabled={composerDisabled}
       />
-      <div className="flex items-center justify-end gap-2">
+      <div className="absolute bottom-2 right-2 flex items-center gap-2">
         {statusMessage && (
           <span className="text-[color:var(--accent-primary)]" title={statusMessage}>
             <Waves className="size-4" aria-hidden />
