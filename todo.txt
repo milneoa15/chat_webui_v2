@@ -1,0 +1,173 @@
+
+in the future could use the big empty space in the empty chat for something?
+
+make it so the model can use terminal commands? need to add a confirm button for this probably. will need to be a tool i guess.
+new chats aren't generating with a proper name based on the prompt
+
+need to fix the llama3 model showing up and models in the model page just disappearing. llama3 still in default settings
+
+have a talking mode, where users can speak into mic, and model speaks response
+
+how do the token counts work with thinking text? how will it work when we start summarizing past messages? how will the chat token count work?
+
+sort out the themes
+
+better indication when text is generating in background, particularly while a model is thinking and view thinking is off
+
+fix the chat title summary. add a setting so these auto ai generated chat summaries can be turned off
+
+add a button next to the search button to enter select mode to mass deleteor archive chats
+
+token counts for the chat/sessions are wrong
+
+	time is wrong. looks to off by about 13 hours. keep in mind im in NZ, and the time obtained should be from users region. also add the date to times for messages
+
+need to add some better indication when model is loaded and ready
+
+when selecting a model for current chat, models that are currently loaded should appear in a different color
+
+	change the markdown/raw text to a single toggle button
+
+
+-------------------------------
+add a debug mode so user can see entire raw text sent to llm (which i assume will contain all previous messages), and raw text returned. including any special marked <tool> or <assistant> markings or something like that.
+
+devise a comprehensive plan and then implement this feature i want:
+
+add a debug mode so user can see entire raw text sent to llm (which i assume will contain all previous messages), and raw text returned. including any special marked <tool> or <assistant> markings or something like that. make sure the content sent by the backend to the fronted for this debug mode is only sent when debug mode is active. that means if debug mode isn't on when user types message, they should not be able to activate it and see debug for an old message.
+----------------------------------
+
+
+when chats get large, rendering is very slow. maybe can change the way messages are stored and then rendered so when a message is collapsed we only keep the part of the message currently showing in memory, and only fetch the rest when expanded? or could add a scroll loader, so only a certain amount of the chat is kept rendered at once, similar to how when you try to scroll up in other chat interfaces, you see a loading symbol as the older messages are loaded.
+
+model loading indication is not very good. when a new chat is made, and there is a model loaded, just use the loaded model automatically
+
+
+	padding/margins between horizontal breaks and messages in main chat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+max tokens/context window
+chat summary description
+adjustable and collapseable side bar
+
+
+
+
+make sure readme is kept up to date
+
+
+try github versioning once i get barebones working
+context windows? changing models mid session?
+model files? for configuration
+
+will docker be able to access the ollama models running on my pc? will the load/unload api's that wrap bash commands work?
+
+can i spin up multiple isntances of the same model at once with ollama? or would it have to be in sequence? instead of the council like pewds had, could be a council of different models?
+
+time for session creation/update is wrong
+
+make sure the themes work, and change the styling to be more like a terminal
+
+"generation_defaults":{"model":"llama3",   why is this here?
+
+make it so all nav can be done using keyboard and arrows?
+
+
+
+
+
+
+we need to change the style of the whole frontend to be more in line with the whole terminal aesthetic. this means minimal buttons, straight edges only, no borders for most sidebars and divs and all. im going for a retro matrix terminal aesthetic. MAKE SURE YOU DO THIS FOR ALL COMPONENTS.
+
+the "active session" bar at the top should be deleted, just the model loader there is good.
+
+remove the top bar. no "Chatbot Web UI v2, Terminal Console" header, just the nav tabs, but make the nav tabs much smaller. make the nav buttons just sit in the right top corner, but not on a visible top bar.
+
+make the chat sidebar collapsible, but make a new chat icon button that stays when this sidebar is collapsed.
+
+the chat box should not have all these buttons like system prompt, parameters, and the select a model warning. again, it should me of a terminal style chat, where hitting enter sends the chat, and shift+enter goes to newline.
+
+
+
+
+
+
+add a toggle between the raw response text and the markdown modified.
+add a way to view the thinking text from thinking models.
+
+you've added some gradient colours i can see like shadows. i don't want any of these, terminals don't have these. for separating parts just use thin straight lines.
+
+when the session/chat sidebar is collapsed, there should be 2 buttons. one to create a new chat and one to expand, both should just be icons.
+
+where possible, instead of text for heading and buttons, use icons.
+
+there should be almost no margins on the sides and top of the page, just like terminals have. this includes the nav buttons, they should be pushed all the way in the top right corner with very little margins. these top nav buttons should be on a very thin top bar, make it very small, and make sure all of these: chat, models, settings, and backend online are just icons, no text. get rid of the command K palette search thing.
+
+get rid of the send button in the chat, users will just hit enter. get rid of the enter sends and shift+enter newline text, users will figure that out themselves.
+
+i want there to be minimal text on the main chat page, users will figure out different icons and parts do as they use the app.
+
+now lastly and most importantly, the main div that the chats live in, as text generates past the bottom of the screen, it should auto scroll to the newest text as it generates, just like chatgpt does
+
+
+
+
+
+
+get rid of the backend online indicator in the top corner
+
+get rid of the share, regenerate, and pin buttons in the chat
+
+add a collapse button to messages from both assistant and user that exceed a certain size. old messages should be automatically collapsed when a new message is generated.
+
+for the chat/session sidebar, make the new chat button much thinner, make the search just a small icon button that when clicked expands an actual search text bar. remove the text that says alt + up/down to cycle. the chats/sessions should not have message count, just tokens, but they should not say the word tokens, just the number and a small icon to represent token. the dates should not have the calendar icon next to them.
+
+the model selector at the top should be thinner and it just go into the same bar as the markdown/plain text toggle buttons. it should only contain a dropdown selector, scan button, and eject, but once again these should just be icons. the dropdown selector should not have the words "choose a model to load" but instead just show "none" when no model is loaded, or the name of the loaded model when one is loaded. the options in the dropdown selector are currently white and don't match the selected theme, and the options say "[idle]" just get rid of this.
+
+the "load a model to begin..." can go as well.
+
+now lastly but most importantly, the main div that the chat lives in should not grow taller than the bottom of the screen. the page should not have a global scrollbar, but the chat section should get a scrollbar when text gets too big to hold it.
+
+
+when the main div grows, move the "+" (create session) and expand buttons to the top bar so they aren't in the way
+
+
+
+
+
+
+
+
+
+
+
+
+when i type a prompt and press enter, i can see the message appear in the chat, but it also stays in the text box. it should disappear from the text box immediately
+
+move the trash and copy buttons to the top of the message, next to the time
+
+the lines between the main chatbox and left sidebar and the topbar and the chatbox appear slightly wider than other breaker lines
+
+currently some buggy behaviour with the collapsed session/chat sidebar. the 2 buttons move to the top correctly, but the 3 button from the original bar appear squashed on the side and there are a bunch of lines out of place. can we fix this up. at the same time, when the sidebar is expanded there is a slow animation of the sidbar growing, just remove this and have it snap out instantly similar to when you collapse it.
