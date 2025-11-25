@@ -16,12 +16,15 @@ export function ModelSelector({ selectedModel, disabled, onSelect, onClear, vari
   const { models, status, refresh } = useModelsStore()
   const [busyModel, setBusyModel] = useState<string | null>(null)
   const [message, setMessage] = useState<string | undefined>()
+  const [initialFetchRequested, setInitialFetchRequested] = useState(false)
 
   useEffect(() => {
-    if (!models.length && status === 'idle') {
-      void refresh()
+    if (initialFetchRequested) {
+      return
     }
-  }, [models.length, status, refresh])
+    setInitialFetchRequested(true)
+    void refresh()
+  }, [initialFetchRequested, refresh])
 
   const options = useMemo(() => {
     return [...models].sort((a, b) => {

@@ -207,7 +207,7 @@ class ModelService:
         )
         if response.status_code >= 400:
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=response.text)
-        self.cache.clear()
+        await self._refresh_cache_after_action(action="delete")
         return ModelActionResponse(
             name=name,
             message=f"Deleted model {name}",
@@ -236,12 +236,12 @@ class ModelService:
 
     async def load_model(self, name: str) -> ModelActionResponse:
         output = await self._run_subprocess(["ollama", "run", name])
-        self.cache.clear()
+        await self._refresh_cache_after_action(action="load")
         return ModelActionResponse(name=name, message=output or "Model loaded", timestamp=_utcnow())
 
     async def unload_model(self, name: str) -> ModelActionResponse:
         output = await self._run_subprocess(["ollama", "stop", name])
-        self.cache.clear()
+        await self._refresh_cache_after_action(action="unload")
         return ModelActionResponse(name=name, message=output or "Model stopped", timestamp=_utcnow())
 
     async def refresh_cache(self) -> None:
@@ -361,6 +361,19 @@ class ModelService:
                 status_code=status.HTTP_502_BAD_GATEWAY, detail=exc.stderr or exc.stdout or str(exc)
             ) from exc
         return (result.stdout or "").strip()
+
+    async def _refresh_cache_after_action(self, *, action: str) -> None:
+        try:
+            await self.refresh_cache()
+        except HTTPException as exc:
+            logger.warning(
+                "models.cache_refresh_failed",
+                action=action,
+                status_code=exc.status_code,
+                detail=exc.detail,
+            )
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("models.cache_refresh_failed", action=action, error=str(exc))
 
 
 class ModelRefreshScheduler:

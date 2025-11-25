@@ -81,15 +81,21 @@ async def test_model_service_load_unload_invokes_subprocess(monkeypatch: pytest.
         async with httpx.AsyncClient() as client:
             service = ModelService(session=session, settings=settings, http_client=client, cache=cache)
             calls: list[list[str]] = []
+            refreshes: list[str] = []
 
             async def _fake_run(self: ModelService, args: list[str]) -> str:
                 calls.append(args)
                 return "ok"
 
+            async def _fake_refresh(self: ModelService, *, action: str) -> None:
+                refreshes.append(action)
+
             monkeypatch.setattr(ModelService, "_run_subprocess", _fake_run)
+            monkeypatch.setattr(ModelService, "_refresh_cache_after_action", _fake_refresh)
             await service.load_model("llama3")
             await service.unload_model("llama3")
     assert calls == [
         ["ollama", "run", "llama3"],
         ["ollama", "stop", "llama3"],
     ]
+    assert refreshes == ["load", "unload"]
