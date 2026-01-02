@@ -29,6 +29,9 @@ when selecting a model for current chat, models that are currently loaded should
 	change the markdown/raw text to a single toggle button
 
 
+
+could do something like copilot where when chat is entered, the whole chatbox jumps up so the text is near the top to make room for the streaming text?
+
 -------------------------------
 add a debug mode so user can see entire raw text sent to llm (which i assume will contain all previous messages), and raw text returned. including any special marked <tool> or <assistant> markings or something like that.
 
